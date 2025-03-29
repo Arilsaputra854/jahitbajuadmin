@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:jahit_baju_admin/controller/login_controller.dart';
+import 'package:jahit_baju_admin/util/token_storage.dart';
+import 'package:jahit_baju_admin/view/dashboard_screen.dart';
 import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -148,9 +151,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: () async {
                               if (formKey.currentState!.validate()) {
                                 FocusScope.of(context).unfocus();
-                                controller.login().then((token){
+                                controller.login().then((token) async {
+                                  if(controller.errorMsg != null){
+                                    Fluttertoast.showToast(msg: controller.errorMsg!);
+                                  }
                                   if(token != null){
-                                    goToDashboardScreen();
+                                    await SecureStorage.saveToken(token).then((_){
+                                      Fluttertoast.showToast( msg: "Login Berhasil!");
+                                      goToDashboardScreen();
+                                    });
                                   }
                                 });
                               }
@@ -176,5 +185,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
   
-  void goToDashboardScreen() {}
+  void goToDashboardScreen() {
+    Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (context) => const DashboardScreen()));
+  }
 }

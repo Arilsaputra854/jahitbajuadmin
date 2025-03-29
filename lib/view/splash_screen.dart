@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:jahit_baju_admin/util/token_storage.dart';
+import 'package:jahit_baju_admin/view/dashboard_screen.dart';
 import 'package:jahit_baju_admin/view/login_screen.dart';
 
 class SplashScreen extends StatelessWidget {
@@ -9,9 +11,15 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
    var version = "1.0.0";
-   Future.delayed(const Duration(seconds: 2), () {
-        Navigator.pushReplacement(context,
+   Future.delayed(const Duration(seconds: 2), () async {
+        String? token = await SecureStorage.getToken();
+        if(token == null){
+          Navigator.pushReplacement(context,
             MaterialPageRoute(builder: (context) => const LoginScreen()));
+        }else{
+          Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (context) => const DashboardScreen()));
+        }
       });
    return Scaffold(
         body: Container(

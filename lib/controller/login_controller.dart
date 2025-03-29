@@ -9,30 +9,23 @@ class LoginController extends ChangeNotifier {
   String? _errorMsg;
   String? get errorMsg => _errorMsg;
 
-  
   String? _password;
   String? get password => _password;
 
-  
+
   String? _email;
   String? get email => _email;
-
-
   
   bool _hidePassword = false;
   bool get hidePassword => _hidePassword;
 
-
-
   LoginController(this.apiService);
 
   
-
   void setPassword(String newPassword){
     _password = newPassword;
     notifyListeners();
   }
-
   
   void setEmail(String newEmail){
     _email = newEmail;
@@ -45,6 +38,8 @@ class LoginController extends ChangeNotifier {
   }
 
   Future<String?> login() async {
+    _errorMsg = null;
+    notifyListeners();
     if(_email != null && _password != null){
       LoginResponse response =  await apiService.login(_email!, _password!);
       if(response.error){
