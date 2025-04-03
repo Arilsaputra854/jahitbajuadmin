@@ -49,7 +49,6 @@ class OrderController extends ChangeNotifier {
         notifyListeners();
       }
     }
-    
   }
 
   Future<User?> getUserById(String id) async {
@@ -57,33 +56,31 @@ class OrderController extends ChangeNotifier {
     if (response.error) {
       _errorMsg =
           response.message ??
-          "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";    
+          "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
       return null;
     } else {
       return response.user!;
     }
   }
 
-  
   Future<Look?> getLookById(String id) async {
     LookResponse response = await apiService.getLookGetById(id);
     if (response.error) {
       _errorMsg =
           response.message ??
-          "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";    
+          "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
       return null;
     } else {
       return response.look!;
     }
   }
 
-  
   Future<Product?> getProductByid(String id) async {
     ProductResponse response = await apiService.productsGetById(id);
     if (response.error) {
       _errorMsg =
           response.message ??
-          "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";    
+          "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
       return null;
     } else {
       return response.product!;
@@ -92,21 +89,36 @@ class OrderController extends ChangeNotifier {
 
   Future<void> updateOrder(Order order) async {
     _errorMsg = null;
-    OrderResponse response =  await apiService.updateOrder(order);
-      if(response.error){
-         _errorMsg =
-            response.message ??
-            "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
-        _loading = false;        
-        refresh();
-      }else{
-        _loading = false;        
-        notifyListeners();
-      }
+    OrderResponse response = await apiService.updateOrder(order);
+    if (response.error) {
+      _errorMsg =
+          response.message ??
+          "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
+      _loading = false;
+      refresh();
+    } else {
+      _loading = false;
+      notifyListeners();
+    }
   }
 
   refresh() {
     _orders = [];
     fetchAllOrder();
+  }
+
+  Future<String?> fetchSvg(String filename) async {
+    _errorMsg = null;
+    final response = await apiService.getCustomDesign(filename);
+    print(response);
+    if (response != null) {      
+      if (response['data'] != null) {
+        return response['data'];
+      } else {
+        _errorMsg = "Tidak dapat memuat gambar, Silakan coba lagi nanti.";
+      }
+    } else {
+      _errorMsg = "Tidak dapat memuat gambar, Silakan coba lagi nanti.";
+    }
   }
 }

@@ -25,8 +25,8 @@ import 'package:jahit_baju_admin/util/token_storage.dart';
 import 'package:logger/logger.dart';
 
 class ApiService {
-  //final String baseUrl = "https://v1.jahitbajuofficial.com/api/";
-  final String baseUrl = "https://bonefish-supreme-sculpin.ngrok-free.app/api/";
+  final String baseUrl = "https://v1.jahitbajuofficial.com/api/";
+  //final String baseUrl = "https://bonefish-supreme-sculpin.ngrok-free.app/api/";
 
   Logger logger = Logger();
   final BuildContext context;
@@ -1120,4 +1120,28 @@ class ApiService {
       return OrderResponse(error: true, message: SOMETHING_WAS_WRONG);
     }
   }
+
+  Future<Map<String, dynamic>?> getCustomDesign(String filename) async {
+    var token = await SecureStorage.getToken();
+    final url = Uri.parse("${baseUrl}order/custom-design/$filename");
+
+    try {
+      final response = await http.get(url, headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer Bearer ${token}',
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Return file or response as needed
+        return {'error': false, 'data': response.body};
+      } else {
+        return {'error': true, 'message': 'File not found'};
+      }
+    } on SocketException catch (e) {
+      logger.e("get custom design : Tidak ada koneksi internet");
+    } catch (e, stackTrace) {
+      logger.e("get custom design : Tidak ada koneksi internet");
+    }
+  }
+  
 }

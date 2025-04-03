@@ -1,10 +1,14 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:jahit_baju_admin/controller/order_controller.dart';
+import 'package:jahit_baju_admin/data/model/look.dart';
+import 'package:jahit_baju_admin/data/model/product.dart';
 import 'package:jahit_baju_admin/util/util.dart';
 import 'package:jahit_baju_admin/data/model/order.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ModifyOrderWidget extends StatefulWidget {
   final Order order;
@@ -44,7 +48,9 @@ class _ModifyOrderWidgetState extends State<ModifyOrderWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Consumer<OrderController>(
+      builder: (context, controller, child) {
+        return Scaffold(
           appBar: AppBar(
             centerTitle: true,
             title: const Text("Modifikasi Order"),
@@ -56,11 +62,14 @@ class _ModifyOrderWidgetState extends State<ModifyOrderWidget> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildCardInfo(),
+                  _buildOrderItem(controller),
                   SizedBox(height: 16.h),
                   _buildTextField("Diskon", discountController, true),
                   _buildTextField("Resi", resiController, false),
                   _buildTextField("Deskripsi", descriptionController, false),
-                  _buildDropdown(),
+                  widget.order.orderStatus != Order.WAITING_FOR_PAYMENT
+                      ? _buildDropdown()
+                      : Text("Status Order : ${widget.order.orderStatus}"),
                   SizedBox(height: 24.h),
                   _buildSaveButton(),
                 ],
@@ -68,6 +77,8 @@ class _ModifyOrderWidgetState extends State<ModifyOrderWidget> {
             ),
           ),
         );
+      },
+    );
   }
 
   Widget _buildCardInfo() {
@@ -78,6 +89,10 @@ class _ModifyOrderWidgetState extends State<ModifyOrderWidget> {
         padding: EdgeInsets.all(12.w),
         child: Column(
           children: [
+            Text(
+              "Detail Order",
+              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+            ),
             _buildInfoTile("Shipping ID", widget.order.shippingId),
             _buildInfoTile("Packaging ID", widget.order.packagingId),
             _buildInfoTile(
@@ -218,7 +233,7 @@ class _ModifyOrderWidgetState extends State<ModifyOrderWidget> {
       paymentDate: widget.order.paymentDate,
       description: descriptionController.text,
     );
-    final controller = Provider.of<OrderController>(context,listen: false);
+    final controller = Provider.of<OrderController>(context, listen: false);
     controller.updateOrder(updatedOrder).then((_) {
       if (controller.errorMsg != null) {
         Fluttertoast.showToast(msg: controller.errorMsg!);
@@ -229,5 +244,260 @@ class _ModifyOrderWidgetState extends State<ModifyOrderWidget> {
     });
   }
 
-  
+  _buildOrderItem(OrderController controller) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(12.w),
+        child: Column(
+          children: [
+            Text(
+              "Detail Produk",
+              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+            ),
+            ListView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: widget.order.items.length,
+              shrinkWrap: true,
+              itemBuilder: (context, index) {
+                if (widget.order.items[index].customDesign != null) {
+                  return FutureBuilder<Look?>(
+                    future: controller.getLookById(
+                      widget.order.items[index].lookId!,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return shimmerWidget();
+                      }
+                      if (snapshot.hasData) {
+                        return Card(
+                          color: Colors.white,
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(width: 2),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                height: 130.h,
+                                padding: const EdgeInsets.all(5),
+                                color: Colors.white,
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(8),
+                                    bottomLeft: Radius.circular(8),
+                                  ),
+                                  child: AspectRatio(
+                                    aspectRatio: 4 / 5,
+                                    child: FutureBuilder(
+                                      future: controller.fetchSvg(
+                                        widget.order.items[index].customDesign!,
+                                      ),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState ==
+                                            ConnectionState.waiting) {
+                                          return Center(
+                                            child: CircularProgressIndicator(),
+                                          );
+                                        }
+
+                                        if (snapshot.hasData) {
+                                          return svgViewer(snapshot.data!);
+                                        } else {
+                                          return Center(
+                                            child: CircularProgressIndicator(),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Container(
+                                  color: Colors.white,
+                                  margin: const EdgeInsets.all(10),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            snapshot.data?.name ??
+                                                "Nama Produk",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12.sp,
+                                            ),
+                                          ),
+                                          Text(
+                                            convertToRupiah(
+                                              widget.order.items[index].price,
+                                            ),
+                                            style: TextStyle(fontSize: 12.sp),
+                                          ),
+                                          Text(
+                                            '${widget.order.items[index].size}',
+                                            style: TextStyle(fontSize: 12.sp),
+                                          ),
+                                        ],
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.all(3),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              "${widget.order.items[index].quantity} pcs",
+                                              style: TextStyle(
+                                                fontSize: 12.sp,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      } else {
+                        return Text(
+                          "Tidak dapat memuat detail produk.",
+                          style: TextStyle(fontSize: 12.sp),
+                        );
+                      }
+                    },
+                  );
+                }
+                FutureBuilder<Product?>(
+                  future: controller.getProductByid(
+                    widget.order.items[index].productId!,
+                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return shimmerWidget();
+                    }
+                    if (snapshot.hasData || snapshot.data != null) {
+                      return Card(
+                        color: Colors.white,
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(width: 2),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              height: 130.h,
+                              padding: const EdgeInsets.all(5),
+                              color: Colors.white,
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(8),
+                                  bottomLeft: Radius.circular(8),
+                                ),
+                                child: AspectRatio(
+                                  aspectRatio: 4 / 5,
+                                  child: CachedNetworkImage(
+                                    imageUrl: snapshot.data!.imageUrl.first,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) {
+                                      return Shimmer.fromColors(
+                                        baseColor: Colors.grey[300]!,
+                                        highlightColor: Colors.grey[100]!,
+                                        child: Container(
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Container(
+                                color: Colors.white,
+                                margin: const EdgeInsets.all(10),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          snapshot.data?.name ?? "Nama Produk",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12.sp,
+                                          ),
+                                        ),
+                                        Text(
+                                          convertToRupiah(
+                                            widget.order.items[index].price,
+                                          ),
+                                          style: TextStyle(fontSize: 12.sp),
+                                        ),
+                                        Text(
+                                          '${widget.order.items[index].size}',
+                                          style: TextStyle(fontSize: 12.sp),
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.all(3),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            "${widget.order.items[index].quantity} pcs",
+                                            style: TextStyle(
+                                              fontSize: 12.sp,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      return Text(
+                        "Tidak dapat memuat detail produk.",
+                        style: TextStyle(fontSize: 12.sp),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

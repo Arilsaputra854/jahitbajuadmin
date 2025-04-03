@@ -3,9 +3,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jahit_baju_admin/controller/order_controller.dart';
 import 'package:jahit_baju_admin/data/model/order.dart';
 import 'package:jahit_baju_admin/util/util.dart'
-    show convertToRupiah, loadingWidget;
+    show convertToRupiah, loadingWidget, shimmerWidget;
 import 'package:jahit_baju_admin/view/widget/order_edit_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 class OrderWidget extends StatefulWidget {
   const OrderWidget({super.key});
@@ -145,8 +146,8 @@ class _OrderWidgetState extends State<OrderWidget>
                         ),
                       ],
                     );
-                  }else{
-                    return CircularProgressIndicator();
+                  } else {
+                    return shimmerWidget();
                   }
                 },
               ),
@@ -169,4 +170,5 @@ class _OrderWidgetState extends State<OrderWidget>
       controller.refresh();
     });
   }
+
 }

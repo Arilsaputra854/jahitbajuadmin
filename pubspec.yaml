@@ -34,12 +34,13 @@ dependencies:
   provider:
   logger:
   flutter_html: 
-  
+  webview_flutter: ^4.10.0
   http:
   fluttertoast: ^8.2.8
   flutter_screenutil:
   easy_sidemenu: ^0.6.1
   intl:
+  shimmer:
   flutter_typeahead: ^4.0.0
   cached_network_image:
   flutter_svg:
