@@ -10,6 +10,20 @@ Widget designerWidget(BuildContext context) {
     builder: (context, controller, child) {
       controller.fetchAllDesigners();
       return Scaffold(
+        appBar: AppBar(
+          actions: [
+                TextButton.icon(
+                  onPressed: () {
+                    controller.refresh();
+                  }, // Fungsi untuk refresh data
+                  icon: Icon(Icons.refresh, color: Colors.black),
+                  label: Text("Refresh", style: TextStyle(color: Colors.black)),
+                ),
+              ],
+              centerTitle: true,
+              title: Text("Desainer",
+                style: TextStyle(fontWeight: FontWeight.bold),),
+        ),
         body: ListView.builder(
           shrinkWrap: true,
           itemCount: controller.designers.length,
@@ -77,7 +91,7 @@ Widget designerWidget(BuildContext context) {
               ),
             ),
             onTap: (){
-              Navigator.push(context, MaterialPageRoute(builder: (context)=> lookWidget(context, controller.designers[index])));
+              Navigator.push(context, MaterialPageRoute(builder: (context)=> LookWidget(designer: controller.designers[index])));
             },
             );
           },

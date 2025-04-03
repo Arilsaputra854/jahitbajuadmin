@@ -43,7 +43,7 @@ class ProductCareTermController extends ChangeNotifier {
   }
 
   updateProductCareTerm(String editedText) async {
-    TermConditionResponse response = await apiService.updateProductCareTerm(editedText);
+    CareGuideResponse response = await apiService.updateProductCareTerm(editedText);
       if (response.error) {
         _errorMsg =
             "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";        

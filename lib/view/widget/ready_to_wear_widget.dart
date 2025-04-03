@@ -31,7 +31,7 @@ Widget readyToWearWidget(BuildContext context, {int weight = 500}) {
               ],
               centerTitle: true,
               title: Text(
-                "Data Produk ready to Wear",
+                "Data Produk Ready to Wear",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),

@@ -2,23 +2,46 @@
 
 import 'package:jahit_baju_admin/data/model/designer.dart';
 
-class DesignerResponse {
+class DesignersResponse {
   bool error;
   String? message;
   List<Designer>? data;
 
-  DesignerResponse({
+  DesignersResponse({
     required this.error,
     this.data,    
     this.message,
+  });
+
+  factory DesignersResponse.fromJson(Map<String, dynamic> json) {
+    return DesignersResponse(
+      error: json['error'] ?? false,
+      message: json['message'],  
+      data: json['data'] != null
+          ? (json['data'] as List).map((item) => Designer.fromJson(item)).toList()
+          : null,    
+    );
+  }
+}
+
+
+class DesignerResponse {
+  bool error;
+  String? message;
+  Designer? designer;
+
+  DesignerResponse({
+    required this.error,
+    this.message,    
+    this.designer,
   });
 
   factory DesignerResponse.fromJson(Map<String, dynamic> json) {
     return DesignerResponse(
       error: json['error'] ?? false,
       message: json['message'],  
-      data: json['data'] != null
-          ? (json['data'] as List).map((item) => Designer.fromJson(item)).toList()
+      designer: json['data'] != null
+          ? Designer.fromJson(json['data'])
           : null,    
     );
   }

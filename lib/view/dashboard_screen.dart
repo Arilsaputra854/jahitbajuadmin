@@ -5,9 +5,11 @@ import 'package:jahit_baju_admin/view/login_screen.dart';
 import 'package:jahit_baju_admin/view/widget/costumer_widget.dart';
 import 'package:jahit_baju_admin/view/widget/delivery_widget.dart';
 import 'package:jahit_baju_admin/view/widget/designer_widget.dart';
+import 'package:jahit_baju_admin/view/widget/order_widget.dart';
 import 'package:jahit_baju_admin/view/widget/packaging_widget.dart';
 import 'package:jahit_baju_admin/view/widget/privacy_widget.dart';
 import 'package:jahit_baju_admin/view/widget/product_care_term_widget.dart';
+import 'package:jahit_baju_admin/view/widget/product_note_widget.dart';
 import 'package:jahit_baju_admin/view/widget/ready_to_wear_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -49,7 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
         icon: Icon(Icons.shopping_bag),
       ),
-      
+
       SideMenuItem(
         title: 'Order',
         onTap: (index, _) {
@@ -92,7 +94,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onTap:
             (index, _, isExpanded) => {print('$index, expanded $isExpanded')},
         children: [
-          
           SideMenuItem(
             title: 'Kebijakan Pengguna dan Privasi',
             onTap: (index, _) {
@@ -108,13 +109,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: const Icon(Icons.policy),
           ),
           SideMenuItem(
-            title: 'Kebijakan Warna Produk',
+            title: 'Catatan Produk',
             onTap: (index, _) {
               sideMenu.changePage(index);
             },
-            icon: const Icon(Icons.policy),
+            icon: const Icon(Icons.note_alt),
           ),
-          
         ],
       ),
       SideMenuItem(
@@ -149,13 +149,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Center(child: Text('Dashboard')),
                 deliveryWidget(context),
                 packagingWidget(context),
-                Center(child: Text('Order')),
+                OrderWidget(),
                 costumerWidget(context),
                 readyToWearWidget(context),
-                designerWidget(context),       
-                termConditionWidget(context),              
-                productCareTermWidget(context)            ,
-                Center(child: Text('Warna Produk')),
+                designerWidget(context),
+                termConditionWidget(context),
+                productCareTermWidget(context),
+                ProductNoteWidget(),
               ],
             ),
           ),

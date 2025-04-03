@@ -8,6 +8,7 @@ import 'package:jahit_baju_admin/controller/look_controller.dart';
 import 'package:jahit_baju_admin/data/model/designer.dart';
 import 'package:jahit_baju_admin/data/model/look.dart';
 import 'package:jahit_baju_admin/data/model/look_texture.dart';
+import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 
 class LookEditWidget extends StatefulWidget {
@@ -49,7 +50,7 @@ class _LookEditWidgetPageState extends State<LookEditWidget> {
       text: widget.look?.lookPrice.toString(),
     );
     weightController = TextEditingController(
-      text: widget.look?.weight.toString(),
+      text: widget.look?.weight.toString() ?? 500.toString(),
     );
     selectedSizes = widget.look?.size ?? [];
 
@@ -99,7 +100,13 @@ class _LookEditWidgetPageState extends State<LookEditWidget> {
     return Consumer<LookController>(
       builder: (context, controller, child) {
         return Scaffold(
-          appBar: AppBar(centerTitle: true, title: Text("Modifikasi Look")),
+          appBar: AppBar(
+            centerTitle: true,
+            title:
+                widget.look != null
+                    ? Text("Modifikasi Look")
+                    : Text("Tambah Look"),
+          ),
           body: Padding(
             padding: EdgeInsets.all(16.0.w),
             child: SingleChildScrollView(
@@ -238,7 +245,7 @@ class _LookEditWidgetPageState extends State<LookEditWidget> {
                       );
                     },
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _addMaterial,
                     child: Text('+ Tambah Material'),
@@ -269,15 +276,17 @@ class _LookEditWidgetPageState extends State<LookEditWidget> {
                       );
                     },
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _addFeature,
                     child: Text('+ Tambah Bagian'),
                   ),
+                  SizedBox(height: 10),
                   Text(
                     "Ukuran Tersedia",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
+                  SizedBox(height: 10),
                   Wrap(
                     spacing: 8.0,
                     children:
@@ -315,7 +324,10 @@ class _LookEditWidgetPageState extends State<LookEditWidget> {
                               : () {
                                 _saveLook(controller);
                               },
-                      child: widget.look != null? Text("Simpan Perubahan") : Text("Simpan Look"),
+                      child:
+                          widget.look != null
+                              ? Text("Simpan Perubahan")
+                              : Text("Simpan Look"),
                     ),
                   ),
                 ],
@@ -429,28 +441,41 @@ class _LookEditWidgetPageState extends State<LookEditWidget> {
   _saveChanges(LookController controller) {
     // Simpan perubahan ke dalam objek Product
     if (widget.look != null) {
-      Look updatedProduct = Look(
-        id: widget.look!.id,
+      if (nameController.text.isNotEmpty &&
+          descriptionController.text.isNotEmpty &&
+          priceController.text.isNotEmpty &&
+          lookPriceController.text.isNotEmpty &&
+          selectedSizes.isNotEmpty) {
 
-        name: nameController.text,
-        description: descriptionController.text,
-        price: double.tryParse(priceController.text) ?? widget.look!.price,
-        lookPrice:
-            double.tryParse(lookPriceController.text) ?? widget.look!.lookPrice,
-        sold: widget.look!.sold,
-        seen: widget.look!.seen,
-        materials: _materials,
-        size: selectedSizes,
-        lastUpdate: DateTime.now().toIso8601String(),
-        designerId: widget.look!.designerId,
-        designUrl: designUrl!,
-        weight: widget.look!.weight,
-      );
-
-      controller.updateLook(updatedProduct).then((_) {
-        Fluttertoast.showToast(msg: "Look berhasil diperbarui!");
-        Navigator.pop(context);
-      });
+        Look updatedProduct = Look(
+          id: widget.look!.id!,
+          name: nameController.text,
+          description: descriptionController.text,
+          price: double.parse(priceController.text),
+          lookPrice: double.parse(lookPriceController.text),
+          features: _features,
+          sold: widget.look?.sold ?? 0,
+          seen: widget.look?.seen ?? 0,
+          materials: _materials,
+          size: selectedSizes,
+          lastUpdate: DateTime.now().toIso8601String(),
+          designerId: widget.designer!.id!,
+          designUrl: designUrl!,
+          weight: int.parse(weightController.text),
+        );
+        controller.updateLook(updatedProduct).then((_) {
+          if (controller.errorMsg != null) {
+            Fluttertoast.showToast(msg: controller.errorMsg!);
+          } else {
+            Fluttertoast.showToast(msg: "Look berhasil diperbarui!");
+            Navigator.pop(context);
+          }
+        });
+      } else {
+        Fluttertoast.showToast(
+          msg: "Harap isi semua kolom sebelum menyimpan produk.",
+        );
+      }
     } else {
       Fluttertoast.showToast(
         msg: "Terjadi kesalahan, tidak dapat melakukan update produk.",
@@ -482,8 +507,12 @@ class _LookEditWidgetPageState extends State<LookEditWidget> {
       );
 
       controller.addLook(newLook).then((_) {
-        Fluttertoast.showToast(msg: "Produk berhasil diperbarui!");
-        Navigator.pop(context);
+        if (controller.errorMsg != null) {
+          Fluttertoast.showToast(msg: controller.errorMsg!);
+        } else {
+          Fluttertoast.showToast(msg: "Produk berhasil diperbarui!");
+          Navigator.pop(context);
+        }
       });
     } else {
       Fluttertoast.showToast(

@@ -67,7 +67,6 @@ class Look {
   }
   Map<String, dynamic> toJson() {
   return {
-    'id': id,
     'designer_id': designerId,
     'name': name,
     'features': features,
@@ -77,7 +76,6 @@ class Look {
     'design_url': designUrl,
     'description': description,
     'size': size,
-    'last_update': lastUpdate,
     'sold': sold,
     'seen': seen,
     'weight': weight,

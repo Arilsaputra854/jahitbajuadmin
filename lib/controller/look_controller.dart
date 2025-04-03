@@ -15,6 +15,9 @@ class LookController extends ChangeNotifier {
   bool _loading = false;
   bool get loading => _loading;
 
+  Designer? _designer;
+  Designer? get designer => _designer;
+
   List<Look> _looks = [];
   List<Look> get looks => _looks;
 
@@ -37,9 +40,23 @@ class LookController extends ChangeNotifier {
     }
   }
 
-  Future<void> updateLook(Look updatedProduct) async {}
+  Future<void> updateLook(Look updatedProduct) async {
+    _errorMsg = null;
+    LookResponse response = await apiService.updateLook(updatedProduct);
+    if (response.error) {
+      _errorMsg =
+          response.message ??
+          "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
+      _loading = false;
+      notifyListeners();
+    } else {
+      _loading = false;
+      notifyListeners();
+    }
+  }
 
   Future<String> fetchSvg(String _designUrl) async {
+    _errorMsg = null;
     final response = await http.get(Uri.parse(_designUrl));
     if (response.statusCode == 200) {
       return response.body;
@@ -61,5 +78,35 @@ class LookController extends ChangeNotifier {
       _loading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> fetchAllLooks() async {
+    _errorMsg = null;
+    _loading = true;
+    notifyListeners();
+    DesignerResponse response = await apiService.getDesignerById(
+      _designer!.id!,
+    );
+    if (response.error) {
+      _errorMsg =
+          response.message ??
+          "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
+      _loading = false;
+      notifyListeners();
+    } else {
+      _looks = response.designer!.looks!;
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
+  void refresh() {
+    _looks = [];
+    fetchAllLooks();
+  }
+
+  void setDesigner(Designer? newDesigner) {
+    _designer = newDesigner;
+    notifyListeners();
   }
 }

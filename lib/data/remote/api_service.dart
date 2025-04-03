@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:jahit_baju_admin/data/model/designer.dart';
 import 'package:jahit_baju_admin/data/model/look.dart';
+import 'package:jahit_baju_admin/data/model/note.dart';
+import 'package:jahit_baju_admin/data/model/order.dart';
 import 'package:jahit_baju_admin/data/model/packaging.dart';
 import 'package:jahit_baju_admin/data/model/product.dart';
 import 'package:jahit_baju_admin/data/remote/response/care_guide_response.dart';
@@ -12,7 +14,9 @@ import 'package:jahit_baju_admin/data/remote/response/city_response.dart';
 import 'package:jahit_baju_admin/data/remote/response/designer_response.dart';
 import 'package:jahit_baju_admin/data/remote/response/login_response.dart';
 import 'package:jahit_baju_admin/data/remote/response/look_response.dart';
+import 'package:jahit_baju_admin/data/remote/response/order_response.dart';
 import 'package:jahit_baju_admin/data/remote/response/packaging_response.dart';
+import 'package:jahit_baju_admin/data/remote/response/product_note_response.dart';
 import 'package:jahit_baju_admin/data/remote/response/product_response.dart';
 import 'package:jahit_baju_admin/data/remote/response/shipping_response.dart';
 import 'package:jahit_baju_admin/data/remote/response/term_condition_response.dart';
@@ -390,7 +394,7 @@ class ApiService {
     }
   }
 
-  Future<DesignerResponse> getDesigner() async {
+  Future<DesignersResponse> getDesigner() async {
     var token = await SecureStorage.getToken();
     var url = Uri.parse("${baseUrl}designer");
 
@@ -401,38 +405,29 @@ class ApiService {
         'Authorization': 'Bearer ${token}',
       },
     );
-
-    DesignerResponse designerResponse;
     try {
       var data = jsonDecode(response.body);
       logger.d("Get Designer : ${data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        designerResponse = DesignerResponse.fromJson(data);
+        return DesignersResponse.fromJson(data);
       } else if (response.statusCode >= 500) {
-        designerResponse = DesignerResponse(
+        return DesignersResponse(
           error: true,
           message: SOMETHING_WAS_WRONG_SERVER,
         );
       } else if (response.statusCode == 401) {
-        designerResponse = DesignerResponse(error: true, message: UNAUTHORIZED);
+        return DesignersResponse(error: true, message: UNAUTHORIZED);
       } else {
-        designerResponse = DesignerResponse(
-          error: true,
-          message: SOMETHING_WAS_WRONG,
-        );
+        return DesignersResponse(error: true, message: SOMETHING_WAS_WRONG);
       }
     } on SocketException catch (e) {
       logger.e("Get Designer : Tidak ada koneksi internet");
-      designerResponse = DesignerResponse(
-        error: true,
-        message: NO_INTERNET_CONNECTION,
-      );
+      return DesignersResponse(error: true, message: NO_INTERNET_CONNECTION);
     } catch (e, stackTrace) {
       logger.e("Get Designer :  $e");
-      designerResponse = DesignerResponse(error: true, message: e.toString());
+      return DesignersResponse(error: true, message: e.toString());
     }
-    return designerResponse;
   }
 
   Future<AddDesignerResponse> addDesigner(Designer designer) async {
@@ -567,7 +562,7 @@ class ApiService {
 
   Future<removeLookResponse> removeLook(Look look) async {
     var token = await SecureStorage.getToken();
-    var url = Uri.parse("${baseUrl}designer/look/${look.id}");
+    var url = Uri.parse("${baseUrl}designer/look?id=${look.id}");
 
     final response = await http.delete(
       url,
@@ -622,6 +617,33 @@ class ApiService {
     } catch (e, stackTrace) {
       logger.e("get city response : $e");
       return CityResponse(error: true, message: "Network error : $e");
+    }
+  }
+
+  Future<UserResponse> getUserById(String id) async {
+    var token = await SecureStorage.getToken();
+    final url = Uri.parse("${baseUrl}users/${id}");
+    final response = await http.get(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${token}',
+      },
+    );
+
+    try {
+      var data = jsonDecode(response.body);
+
+      logger.d("get user response : ${data}");
+
+      return UserResponse.fromJson(data);
+    } on SocketException catch (e) {
+      logger.e("get user response : Tidak ada koneksi internet");
+
+      return UserResponse(message: NO_INTERNET_CONNECTION, error: true);
+    } catch (e, stackTrace) {
+      logger.e("get user response : $e");
+      return UserResponse(error: true, message: "Network error : $e");
     }
   }
 
@@ -696,7 +718,7 @@ class ApiService {
       return TermConditionResponse(error: true, data: NO_INTERNET_CONNECTION);
     } catch (e, stackTrace) {
       logger.e("Term Condition : $e");
-      return TermConditionResponse(error: true, data: SOMETHING_WAS_WRONG);
+      return TermConditionResponse(error: true, data: e.toString());
     }
   }
 
@@ -722,7 +744,7 @@ class ApiService {
       return TermConditionResponse(error: true, data: NO_INTERNET_CONNECTION);
     } catch (e, stackTrace) {
       logger.e("update Term Condition : $e");
-      return TermConditionResponse(error: true, data: SOMETHING_WAS_WRONG);
+      return TermConditionResponse(error: true, data: e.toString());
     }
   }
 
@@ -752,11 +774,11 @@ class ApiService {
       return CareGuideResponse(error: true, message: NO_INTERNET_CONNECTION);
     } catch (e, stackTrace) {
       logger.e("Care Guide :  $e");
-      return CareGuideResponse(error: true, message: SOMETHING_WAS_WRONG);
+      return CareGuideResponse(error: true, message: e.toString());
     }
   }
 
-  updateProductCareTerm(String editedText) async {
+  Future<CareGuideResponse> updateProductCareTerm(String editedText) async {
     final url = Uri.parse("${baseUrl}care-guide");
     var token = await SecureStorage.getToken();
     final response = await http.patch(
@@ -765,13 +787,12 @@ class ApiService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ${token}',
       },
-      
+      body: jsonEncode({'data': editedText}),
     );
-
 
     try {
       var data = jsonDecode(response.body);
-      logger.d("Care Guide : ${data}");
+      logger.d("Update Care Guide : ${data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return CareGuideResponse.fromJson(data);
@@ -784,11 +805,319 @@ class ApiService {
         return CareGuideResponse(error: true, message: SOMETHING_WAS_WRONG);
       }
     } on SocketException catch (e) {
-      logger.e("Care Guide :  Tidak ada koneksi internet");
+      logger.e("Update Care Guide :  Tidak ada koneksi internet");
       return CareGuideResponse(error: true, message: NO_INTERNET_CONNECTION);
     } catch (e, stackTrace) {
-      logger.e("Care Guide :  $e");
-      return CareGuideResponse(error: true, message: SOMETHING_WAS_WRONG);
+      logger.e("Update Care Guide :  $e");
+      return CareGuideResponse(error: true, message: e.toString());
+    }
+  }
+
+  Future<ProductNoteResponse> getNoteProduct(int type) async {
+    var token = await SecureStorage.getToken();
+    var url = Uri.parse("${baseUrl}product-note?type=${type}");
+
+    final response = await http.get(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${token}',
+      },
+    );
+
+    try {
+      var data = jsonDecode(response.body);
+      logger.d("Get Product Note : ${data}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return ProductNoteResponse.fromJson(data);
+      } else if (response.statusCode >= 500) {
+        return ProductNoteResponse(
+          error: true,
+          message: SOMETHING_WAS_WRONG_SERVER,
+        );
+      } else if (response.statusCode == 401) {
+        return ProductNoteResponse(error: true, message: UNAUTHORIZED);
+      } else {
+        return ProductNoteResponse(error: true, message: SOMETHING_WAS_WRONG);
+      }
+    } on SocketException catch (e) {
+      logger.e("Get Product Note : Tidak ada koneksi internet");
+      return ProductNoteResponse(error: true, message: NO_INTERNET_CONNECTION);
+    } catch (e, stackTrace) {
+      logger.e("Get Product Note  :  $e");
+      return ProductNoteResponse(error: true, message: e.toString());
+    }
+  }
+
+  Future<ProductNoteResponse> updateNoteProduct(Note note) async {
+    var token = await SecureStorage.getToken();
+    var url = Uri.parse("${baseUrl}product-notes");
+
+    final response = await http.patch(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${token}',
+      },
+      body: jsonEncode({'id': note.id, 'data': note.data}),
+    );
+
+    try {
+      var data = jsonDecode(response.body);
+      logger.d("update Product Note : ${data}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return ProductNoteResponse.fromJson(data);
+      } else if (response.statusCode >= 500) {
+        return ProductNoteResponse(
+          error: true,
+          message: SOMETHING_WAS_WRONG_SERVER,
+        );
+      } else if (response.statusCode == 401) {
+        return ProductNoteResponse(error: true, message: UNAUTHORIZED);
+      } else {
+        return ProductNoteResponse(error: true, message: SOMETHING_WAS_WRONG);
+      }
+    } on SocketException catch (e) {
+      logger.e("update Product Note : Tidak ada koneksi internet");
+      return ProductNoteResponse(error: true, message: NO_INTERNET_CONNECTION);
+    } catch (e, stackTrace) {
+      logger.e("update Product Note  :  $e");
+      return ProductNoteResponse(error: true, message: e.toString());
+    }
+  }
+
+  Future<DesignerResponse> getDesignerById(String id) async {
+    var token = await SecureStorage.getToken();
+    var url = Uri.parse("${baseUrl}designer?id=${id}");
+
+    final response = await http.get(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${token}',
+      },
+    );
+
+    try {
+      var data = jsonDecode(response.body);
+      logger.d("Get Designer by Id : ${data}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return DesignerResponse.fromJson(data);
+      } else if (response.statusCode >= 500) {
+        return DesignerResponse(
+          error: true,
+          message: SOMETHING_WAS_WRONG_SERVER,
+        );
+      } else if (response.statusCode == 401) {
+        return DesignerResponse(error: true, message: UNAUTHORIZED);
+      } else {
+        return DesignerResponse(error: true, message: SOMETHING_WAS_WRONG);
+      }
+    } on SocketException catch (e) {
+      logger.e("Get Designer by Id :  Tidak ada koneksi internet");
+      return DesignerResponse(error: true, message: NO_INTERNET_CONNECTION);
+    } catch (e, stackTrace) {
+      logger.e("Get Designer by Id :  $e");
+      return DesignerResponse(error: true, message: e.toString());
+    }
+  }
+
+  Future<LookResponse> updateLook(Look updatedLook) async {
+    var token = await SecureStorage.getToken();
+    var url = Uri.parse("${baseUrl}designer/look?id=${updatedLook.id}");
+
+    final response = await http.patch(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${token}',
+      },
+      body: jsonEncode({
+        'designer_id': updatedLook.designerId,
+        'name': updatedLook.name,
+        'features': updatedLook.features,
+        'materials': updatedLook.materials,
+        'price': updatedLook.price,
+        'look_price': updatedLook.lookPrice,
+        'design_url': updatedLook.designUrl,
+        'description': updatedLook.description,
+        'size': updatedLook.size,
+        'sold': updatedLook.sold,
+        'seen': updatedLook.seen,
+        'weight': updatedLook.weight,
+      }),
+    );
+    try {
+      var data = jsonDecode(response.body);
+      logger.d("Update Look : ${data}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return LookResponse.fromJson(data);
+      } else if (response.statusCode >= 500) {
+        return LookResponse(error: true, message: SOMETHING_WAS_WRONG_SERVER);
+      } else if (response.statusCode == 401) {
+        return LookResponse(error: true, message: UNAUTHORIZED);
+      } else {
+        return LookResponse(error: true, message: SOMETHING_WAS_WRONG);
+      }
+    } on SocketException catch (e) {
+      logger.e("Update Look : Tidak ada koneksi internet");
+      return LookResponse(error: true, message: NO_INTERNET_CONNECTION);
+    } catch (e, stackTrace) {
+      logger.e("Update Look : $e");
+      return LookResponse(error: true, message: e.toString());
+    }
+  }
+
+  Future<OrdersResponse> getAllOrder() async {
+    var token = await SecureStorage.getToken();
+    final url = Uri.parse("${baseUrl}orders");
+    final response = await http.get(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${token}',
+      },
+    );
+
+    try {
+      var data = jsonDecode(response.body);
+
+      logger.d("Get All Order : ${data}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return OrdersResponse.fromJson(data);
+      } else if (response.statusCode >= 500) {
+        return OrdersResponse(error: true, message: SOMETHING_WAS_WRONG_SERVER);
+      } else if (response.statusCode == 401) {
+        return OrdersResponse(error: true, message: UNAUTHORIZED);
+      } else {
+        return OrdersResponse(error: true, message: SOMETHING_WAS_WRONG);
+      }
+    } on SocketException catch (e) {
+      logger.e("Get All Order : Tidak ada koneksi internet");
+      return OrdersResponse(message: NO_INTERNET_CONNECTION, error: true);
+    } catch (e, stackTrace) {
+      logger.e("Get All Order : ${e}");
+      return OrdersResponse(error: true, message: "Network error : $e");
+    }
+  }
+
+  Future<ProductResponse> productsGetById(String productId) async {
+    final url = Uri.parse("${baseUrl}products?id=$productId");
+    var token = await SecureStorage.getToken();
+
+    try {
+      final response = await http.get(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token}',
+        },
+      );
+
+      var data = jsonDecode(response.body);
+
+      logger.d("Get Product by ID : ${data}");
+
+      ProductResponse productResponse = ProductResponse.fromJson(data);
+      return productResponse;
+    } on SocketException catch (e) {
+      logger.e("Get Product by ID : Tidak ada koneksi internet");
+
+      return ProductResponse(message: NO_INTERNET_CONNECTION, error: true);
+    } catch (e, stackTrace) {
+      logger.e("Get Product by ID : ${e}");
+      return ProductResponse(
+        error: true,
+        message: "Network error : $e",
+        product: null,
+      );
+    }
+  }
+
+  Future<LookResponse> getLookGetById(String lookId) async {
+    final url = Uri.parse("${baseUrl}designer/look?id=$lookId");
+    var token = await SecureStorage.getToken();
+
+    try {
+      final response = await http
+          .get(
+            url,
+            headers: <String, String>{
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ${token}',
+            },
+          )
+          .timeout(Duration(seconds: 10));
+
+      var data = jsonDecode(response.body);
+
+      logger.d("Get Look by ID : ${data}");
+
+      return LookResponse.fromJson(data);
+    } on SocketException catch (e) {
+      logger.e("Get Look by ID : Tidak ada koneksi internet");
+
+      return LookResponse(message: NO_INTERNET_CONNECTION, error: true);
+    } catch (e, stackTrace) {
+      logger.e("Get Look by ID : ${e}");
+      return LookResponse(error: true, message: SOMETHING_WAS_WRONG);
+    }
+  }
+
+  Future<OrderResponse> updateOrder(Order order) async {
+    final url = Uri.parse("${baseUrl}order/${order.id}");
+    var token = await SecureStorage.getToken();
+
+    try {
+      final response = await http.patch(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token}',
+        },
+        body: jsonEncode({
+          'buyer_id': order.buyerId,
+          'shipping_id': order.shippingId,
+          'packaging_id': order.packagingId,
+          'cart_id': order.cartId,
+          'total_price': order.totalPrice,
+          'rtw_price': order.rtwPrice,
+          'custom_price': order.customPrice,
+          'shipping_price': order.shippingPrice,
+          'packaging_price': order.packagingPrice,
+          'buyer_address': order.buyerAddress,
+          'discount': order.discount,
+          'order_created': order.orderCreated.toIso8601String(),
+          'order_status': order.orderStatus,
+          'last_update': order.lastUpdate.toIso8601String(),
+          'items': order.items.map((item) => item.toJson()).toList(),
+          'payment_url': order.paymentUrl ?? "",
+          'expired_date': order.expiredDate.toIso8601String(),
+          'resi': order.resi,
+          'payment_method': order.paymentMethod,
+          'xendit_status': order.xenditStatus,
+          'payment_date':order. paymentDate?.toIso8601String(),
+          'description': order.description,
+        }),
+      );
+
+      var data = jsonDecode(response.body);
+
+      logger.d("Update order : ${data}");
+
+      return OrderResponse.fromJson(data);
+    } on SocketException catch (e) {
+      logger.e("Update order : Tidak ada koneksi internet");
+
+      return OrderResponse(message: NO_INTERNET_CONNECTION, error: true);
+    } catch (e, stackTrace) {
+      logger.e("Update order : ${e}");
+      return OrderResponse(error: true, message: SOMETHING_WAS_WRONG);
     }
   }
 }

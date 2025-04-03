@@ -22,7 +22,7 @@ class DesignerController extends ChangeNotifier {
     if (_designers.isEmpty) {
       _loading = true;
       notifyListeners();
-      DesignerResponse response = await apiService.getDesigner();
+      DesignersResponse response = await apiService.getDesigner();
       if (response.error) {
         _errorMsg =
             response.message ??

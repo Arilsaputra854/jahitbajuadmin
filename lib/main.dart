@@ -4,6 +4,8 @@ import 'package:jahit_baju_admin/controller/costumer_controller.dart';
 import 'package:jahit_baju_admin/controller/designer_controller.dart';
 import 'package:jahit_baju_admin/controller/login_controller.dart';
 import 'package:jahit_baju_admin/controller/look_controller.dart';
+import 'package:jahit_baju_admin/controller/note_controller.dart';
+import 'package:jahit_baju_admin/controller/order_controller.dart';
 import 'package:jahit_baju_admin/controller/packaging_controller.dart';
 import 'package:jahit_baju_admin/controller/privacy_controller.dart';
 import 'package:jahit_baju_admin/controller/product_care_term_controller.dart';
@@ -55,6 +57,16 @@ class MyApp extends StatelessWidget {
 
          ChangeNotifierProvider(
           create: (context) => ProductCareTermController(ApiService(context)),
+        ),
+
+        
+         ChangeNotifierProvider(
+          create: (context) => NoteController(ApiService(context)),
+        ),
+
+        
+         ChangeNotifierProvider(
+          create: (context) => OrderController(ApiService(context)),
         ),
       ],
 

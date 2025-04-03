@@ -24,6 +24,30 @@ class LookResponse {
   }
 }
 
+
+class LooksResponse {
+  bool error;
+  String? message;
+  List<Look>? looks;
+
+  LooksResponse({
+    required this.error,
+    this.message,
+    this.looks
+  });
+
+  factory LooksResponse.fromJson(Map<String, dynamic> json) {
+    return LooksResponse(
+      error: json['error'] ?? false,
+      message: json['message'] ?? null,
+      looks:  json['data'] != null
+          ? (json['data'] as List).map((item) => Look.fromJson(item)).toList()
+          : null,   
+    );
+  }
+}
+
+
 class removeLookResponse {
   bool error;
   String? message;
