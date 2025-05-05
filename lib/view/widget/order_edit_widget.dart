@@ -9,6 +9,7 @@ import 'package:jahit_baju_admin/util/util.dart';
 import 'package:jahit_baju_admin/data/model/order.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ModifyOrderWidget extends StatefulWidget {
   final Order order;
@@ -24,6 +25,7 @@ class _ModifyOrderWidgetState extends State<ModifyOrderWidget> {
   late TextEditingController resiController;
   late TextEditingController descriptionController;
   String selectedOrderStatus = Order.WAITING_FOR_PAYMENT;
+  
 
   @override
   void initState() {
@@ -95,10 +97,6 @@ class _ModifyOrderWidgetState extends State<ModifyOrderWidget> {
             ),
             _buildInfoTile("Shipping ID", widget.order.shippingId),
             _buildInfoTile("Packaging ID", widget.order.packagingId),
-            _buildInfoTile(
-              "Total Harga",
-              convertToRupiah(widget.order.totalPrice),
-            ),
             _buildInfoTile("RTW Harga", convertToRupiah(widget.order.rtwPrice)),
             _buildInfoTile(
               "Custom Harga",
@@ -112,24 +110,54 @@ class _ModifyOrderWidgetState extends State<ModifyOrderWidget> {
               "Harga Packaging",
               convertToRupiah(widget.order.packagingPrice),
             ),
+
+            _buildInfoTile(
+              "Total Harga",
+              convertToRupiah(widget.order.totalPrice),
+            ),
             _buildInfoTile("Metode Pembayaran", widget.order.paymentMethod!),
+            _buildInfoTile(
+              "Payment URL",
+              widget.order.paymentUrl!,
+              isLink: true,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoTile(String title, String value) {
+  Widget _buildInfoTile(String title, String value, {bool isLink = false}) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(
         title,
         style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
       ),
-      subtitle: Text(
-        value,
-        style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
-      ),
+      subtitle:
+          isLink
+              ? GestureDetector(
+                onTap: () async {
+                  final Uri url = Uri.parse(value);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.platformDefault);
+                  } else {
+                    debugPrint("Could not launch $value");
+                  }
+                },
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              )
+              : Text(
+                value,
+                style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
+              ),
     );
   }
 
@@ -381,118 +409,121 @@ class _ModifyOrderWidgetState extends State<ModifyOrderWidget> {
                       }
                     },
                   );
-                }
-                FutureBuilder<Product?>(
-                  future: controller.getProductByid(
-                    widget.order.items[index].productId!,
-                  ),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return shimmerWidget();
-                    }
-                    if (snapshot.hasData || snapshot.data != null) {
-                      return Card(
-                        color: Colors.white,
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(width: 2),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Container(
-                              height: 130.h,
-                              padding: const EdgeInsets.all(5),
-                              color: Colors.white,
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(8),
-                                  bottomLeft: Radius.circular(8),
-                                ),
-                                child: AspectRatio(
-                                  aspectRatio: 4 / 5,
-                                  child: CachedNetworkImage(
-                                    imageUrl: snapshot.data!.imageUrl.first,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) {
-                                      return Shimmer.fromColors(
-                                        baseColor: Colors.grey[300]!,
-                                        highlightColor: Colors.grey[100]!,
-                                        child: Container(
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                          color: Colors.grey,
-                                        ),
-                                      );
-                                    },
+                } else {
+                  return FutureBuilder<Product?>(
+                    future: controller.getProductByid(
+                      widget.order.items[index].productId!,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return shimmerWidget();
+                      }
+                      if (snapshot.hasData || snapshot.data != null) {
+                        return Card(
+                          color: Colors.white,
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(width: 2),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                height: 130.h,
+                                padding: const EdgeInsets.all(5),
+                                color: Colors.white,
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(8),
+                                    bottomLeft: Radius.circular(8),
+                                  ),
+                                  child: AspectRatio(
+                                    aspectRatio: 4 / 5,
+                                    child: CachedNetworkImage(
+                                      imageUrl: snapshot.data!.imageUrl.first,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) {
+                                        return Shimmer.fromColors(
+                                          baseColor: Colors.grey[300]!,
+                                          highlightColor: Colors.grey[100]!,
+                                          child: Container(
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                            color: Colors.grey,
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            Expanded(
-                              child: Container(
-                                color: Colors.white,
-                                margin: const EdgeInsets.all(10),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          snapshot.data?.name ?? "Nama Produk",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12.sp,
-                                          ),
-                                        ),
-                                        Text(
-                                          convertToRupiah(
-                                            widget.order.items[index].price,
-                                          ),
-                                          style: TextStyle(fontSize: 12.sp),
-                                        ),
-                                        Text(
-                                          '${widget.order.items[index].size}',
-                                          style: TextStyle(fontSize: 12.sp),
-                                        ),
-                                      ],
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.all(3),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                              Expanded(
+                                child: Container(
+                                  color: Colors.white,
+                                  margin: const EdgeInsets.all(10),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "${widget.order.items[index].quantity} pcs",
+                                            snapshot.data?.name ??
+                                                "Nama Produk",
                                             style: TextStyle(
-                                              fontSize: 12.sp,
                                               fontWeight: FontWeight.bold,
+                                              fontSize: 12.sp,
                                             ),
+                                          ),
+                                          Text(
+                                            convertToRupiah(
+                                              widget.order.items[index].price,
+                                            ),
+                                            style: TextStyle(fontSize: 12.sp),
+                                          ),
+                                          Text(
+                                            '${widget.order.items[index].size}',
+                                            style: TextStyle(fontSize: 12.sp),
                                           ),
                                         ],
                                       ),
-                                    ),
-                                  ],
+                                      Container(
+                                        padding: const EdgeInsets.all(3),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              "${widget.order.items[index].quantity} pcs",
+                                              style: TextStyle(
+                                                fontSize: 12.sp,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else {
-                      return Text(
-                        "Tidak dapat memuat detail produk.",
-                        style: TextStyle(fontSize: 12.sp),
-                      );
-                    }
-                  },
-                );
+                            ],
+                          ),
+                        );
+                      } else {
+                        return Text(
+                          "Tidak dapat memuat detail produk.",
+                          style: TextStyle(fontSize: 12.sp),
+                        );
+                      }
+                    },
+                  );
+                }
               },
             ),
           ],

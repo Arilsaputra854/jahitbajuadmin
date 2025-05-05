@@ -1,14 +1,21 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:jahit_baju_admin/data/model/app_banner.dart';
 import 'package:jahit_baju_admin/data/model/designer.dart';
 import 'package:jahit_baju_admin/data/model/look.dart';
+import 'package:jahit_baju_admin/data/model/look_texture.dart';
 import 'package:jahit_baju_admin/data/model/note.dart';
 import 'package:jahit_baju_admin/data/model/order.dart';
 import 'package:jahit_baju_admin/data/model/packaging.dart';
 import 'package:jahit_baju_admin/data/model/product.dart';
+import 'package:jahit_baju_admin/data/model/texture.dart';
+import 'package:jahit_baju_admin/data/remote/response/app_banner_response.dart'
+    show AppBannerResponse, getAppBannerResponse;
 import 'package:jahit_baju_admin/data/remote/response/care_guide_response.dart';
 import 'package:jahit_baju_admin/data/remote/response/city_response.dart';
 import 'package:jahit_baju_admin/data/remote/response/designer_response.dart';
@@ -20,13 +27,18 @@ import 'package:jahit_baju_admin/data/remote/response/product_note_response.dart
 import 'package:jahit_baju_admin/data/remote/response/product_response.dart';
 import 'package:jahit_baju_admin/data/remote/response/shipping_response.dart';
 import 'package:jahit_baju_admin/data/remote/response/term_condition_response.dart';
+import 'package:jahit_baju_admin/data/remote/response/texture_response.dart';
+import 'package:jahit_baju_admin/data/remote/response/upload_response.dart';
+import 'package:jahit_baju_admin/data/remote/response/upload_texture.dart';
 import 'package:jahit_baju_admin/data/remote/response/users_response.dart';
 import 'package:jahit_baju_admin/util/token_storage.dart';
 import 'package:logger/logger.dart';
+import 'package:mime/mime.dart';
 
 class ApiService {
-  final String baseUrl = "https://v1.jahitbajuofficial.com/api/";
-  //final String baseUrl = "https://bonefish-supreme-sculpin.ngrok-free.app/api/";
+  static const String baseUrl = "https://v1.jahitbajuofficial.com/api/";
+  //static const String baseUrl =
+  //   "https://bonefish-supreme-sculpin.ngrok-free.app/api/";
 
   Logger logger = Logger();
   final BuildContext context;
@@ -111,7 +123,7 @@ class ApiService {
     }
   }
 
-  Future<PackagingResponse> getAllPackaging() async {
+  Future<PackagingsResponse> getAllPackaging() async {
     final url = Uri.parse("${baseUrl}packaging");
     var token = await SecureStorage.getToken();
 
@@ -128,16 +140,16 @@ class ApiService {
       logger.d("Packaging Get : ${data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return PackagingResponse.fromJson(data);
+        return PackagingsResponse.fromJson(data);
       } else {
-        return PackagingResponse.fromJson(data);
+        return PackagingsResponse.fromJson(data);
       }
     } on SocketException catch (e) {
       logger.e("Packaging Get : Tidak ada koneksi internet");
-      return PackagingResponse(error: true, message: NO_INTERNET_CONNECTION);
+      return PackagingsResponse(error: true, message: NO_INTERNET_CONNECTION);
     } catch (e, stackTrace) {
       logger.e("Packaging Get : $e");
-      return PackagingResponse(error: true, message: e.toString());
+      return PackagingsResponse(error: true, message: e.toString());
     }
   }
 
@@ -225,7 +237,7 @@ class ApiService {
     final url = Uri.parse("${baseUrl}packaging?id=${id}");
 
     try {
-      final response = await http.post(
+      final response = await http.delete(
         url,
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -251,17 +263,21 @@ class ApiService {
   }
 
   Future<ProductsResponse> productsGet() async {
-    final url = Uri.parse("${baseUrl}products");
+    var token = await SecureStorage.getToken();
+    final url = Uri.parse("${baseUrl}all-products");
 
     try {
       final response = await http.get(
         url,
-        headers: <String, String>{'Content-Type': 'application/json'},
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token}',
+        },
       );
 
       var data = jsonDecode(response.body);
 
-      logger.d("Get Product : ${data["data"]}");
+      logger.d("Get Product : ${data}");
       if (response.statusCode == 200 || response.statusCode == 201) {
         return ProductsResponse.fromJson(data);
       } else {
@@ -294,6 +310,8 @@ class ApiService {
           'price': product.price,
           'stock': product.stock,
           'type': 1,
+          'product_code': product.productCode,
+          'materials': product.materials,
           'images_url': product.imageUrl,
           'tags': product.tags,
           'category': product.category,
@@ -303,7 +321,7 @@ class ApiService {
 
       var data = jsonDecode(response.body);
 
-      logger.d("Add Product : ${data["data"]}");
+      logger.d("Add Product : ${data}");
       if (response.statusCode == 200 || response.statusCode == 201) {
         return ProductsResponse.fromJson(data);
       } else {
@@ -331,7 +349,6 @@ class ApiService {
           'Authorization': 'Bearer ${token}',
         },
       );
-      logger.d("Response Body : ${response.body}"); // Tambahkan log ini
 
       var data = jsonDecode(response.body);
 
@@ -364,6 +381,7 @@ class ApiService {
           'Authorization': 'Bearer ${token}',
         },
         body: jsonEncode({
+          'product_code': product.productCode,
           'name': product.name,
           'description': product.description,
           'price': product.price,
@@ -607,7 +625,7 @@ class ApiService {
     try {
       var data = jsonDecode(response.body);
 
-      logger.d("get city response : ${data}");
+      //logger.d("get city response : ${data}");
 
       return CityResponse.fromJson(data);
     } on SocketException catch (e) {
@@ -617,6 +635,35 @@ class ApiService {
     } catch (e, stackTrace) {
       logger.e("get city response : $e");
       return CityResponse(error: true, message: "Network error : $e");
+    }
+  }
+
+  Future<UserResponse> userGet() async {
+    final url = Uri.parse("${baseUrl}users/current");
+
+    var token = await SecureStorage.getToken();
+
+    final response = await http.get(url, headers: <String, String>{
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ${token}'
+    });
+
+    try {
+      var data = jsonDecode(response.body);
+
+      if (response.statusCode == 401) {
+        logger.e("User Get : $data");
+        return UserResponse(message: UNAUTHORIZED, error: true);
+      }
+      logger.d("User Get : $data");
+
+      return UserResponse.fromJson(data);
+    } on SocketException catch (e) {
+      logger.e("User Get : Tidak ada koneksi internet");
+      return UserResponse(message: "Tidak ada internet", error: true);
+    } catch (e, stackTrace) {
+      logger.e("User Get : $e");
+      return UserResponse(message: "Network error : $e", error: true);
     }
   }
 
@@ -697,6 +744,33 @@ class ApiService {
       return UserResponse(message: NO_INTERNET_CONNECTION, error: true);
     } catch (e, stackTrace) {
       logger.e("remove user response : $e");
+      return UserResponse(error: true, message: "Network error : $e");
+    }
+  }
+
+  Future<UserResponse> activateUser(String id) async {
+    var token = await SecureStorage.getToken();
+    final url = Uri.parse("${baseUrl}users/activate/${id}");
+    final response = await http.post(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${token}',
+      },
+    );
+
+    try {
+      var data = jsonDecode(response.body);
+
+      logger.d("activate user response : ${data}");
+
+      return UserResponse.fromJson(data);
+    } on SocketException catch (e) {
+      logger.e("activate user response : Tidak ada koneksi internet");
+
+      return UserResponse(message: NO_INTERNET_CONNECTION, error: true);
+    } catch (e, stackTrace) {
+      logger.e("activate user response : $e");
       return UserResponse(error: true, message: "Network error : $e");
     }
   }
@@ -1101,7 +1175,7 @@ class ApiService {
           'resi': order.resi,
           'payment_method': order.paymentMethod,
           'xendit_status': order.xenditStatus,
-          'payment_date':order. paymentDate?.toIso8601String(),
+          'payment_date': order.paymentDate?.toIso8601String(),
           'description': order.description,
         }),
       );
@@ -1121,27 +1195,360 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>?> getCustomDesign(String filename) async {
+  Future<UploadResponse> uploadLookDesign(
+    Uint8List fileBytes,
+    String newFilename,
+  ) async {
     var token = await SecureStorage.getToken();
-    final url = Uri.parse("${baseUrl}order/custom-design/$filename");
+    final url = Uri.parse("${baseUrl}upload/look-design");
+    final request = http.MultipartRequest('POST', url);
+    final mimeType = lookupMimeType(newFilename) ?? 'application/octet-stream';
+    final mediaType = MediaType.parse(mimeType);
+
+    final multipartFile = http.MultipartFile.fromBytes(
+      'look-design',
+      fileBytes,
+      filename: newFilename,
+      contentType: mediaType,
+    );
+    request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(multipartFile);
+    request.fields['filename'] = newFilename;
 
     try {
-      final response = await http.get(url, headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer Bearer ${token}',
-      });
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Return file or response as needed
-        return {'error': false, 'data': response.body};
+      if (response.statusCode == 200) {
+        logger.d("upload look design : ${data}");
+        return UploadResponse.fromJson(data);
       } else {
-        return {'error': true, 'message': 'File not found'};
+        logger.e("upload look design : ${data['message']}");
+        return UploadResponse(error: true, message: data['message']);
       }
-    } on SocketException catch (e) {
-      logger.e("get custom design : Tidak ada koneksi internet");
-    } catch (e, stackTrace) {
-      logger.e("get custom design : Tidak ada koneksi internet");
+    } catch (e) {
+      logger.e("upload look design : ${e.toString()}");
+      return UploadResponse(error: true, message: e.toString());
     }
   }
-  
+
+  Future<UploadResponse> uploadLookTexture(
+    Uint8List fileBytes,
+    String newFilename,
+  ) async {
+    var token = await SecureStorage.getToken();
+    final url = Uri.parse("${baseUrl}upload/look-texture");
+    final request = http.MultipartRequest('POST', url);
+    final mimeType = lookupMimeType(newFilename) ?? 'application/octet-stream';
+    final mediaType = MediaType.parse(mimeType);
+
+    final multipartFile = http.MultipartFile.fromBytes(
+      'look-texture',
+      fileBytes,
+      filename: newFilename,
+      contentType: mediaType,
+    );
+    request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(multipartFile);
+    request.fields['filename'] = newFilename;
+
+    try {
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      logger.d("upload look texture : ${data}");
+      if (response.statusCode == 200) {
+        return UploadResponse.fromJson(data);
+      } else {
+        logger.e("upload look texture : ${data['message']}");
+        return UploadResponse(error: true, message: data['message']);
+      }
+    } catch (e) {
+      logger.e("upload look texture : ${e.toString()}");
+      return UploadResponse(error: true, message: e.toString());
+    }
+  }
+
+  Future<UploadResponse> uploadProductImage(
+    Uint8List fileBytes,
+    String newFilename,
+  ) async {
+    var token = await SecureStorage.getToken();
+    final url = Uri.parse("${baseUrl}upload/product-image");
+    final request = http.MultipartRequest('POST', url);
+    final mimeType = lookupMimeType(newFilename) ?? 'application/octet-stream';
+    final mediaType = MediaType.parse(mimeType);
+
+    final multipartFile = http.MultipartFile.fromBytes(
+      'product-image',
+      fileBytes,
+      filename: newFilename,
+      contentType: mediaType,
+    );
+    request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(multipartFile);
+    request.fields['filename'] = newFilename;
+
+    try {
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        logger.d("upload product image : ${data}");
+        return UploadResponse.fromJson(data);
+      } else {
+        logger.e("upload product image : ${data['message']}");
+        return UploadResponse(error: true, message: data['message']);
+      }
+    } catch (e) {
+      logger.e("upload product image : ${e.toString()}");
+      return UploadResponse(error: true, message: e.toString());
+    }
+  }
+
+  Future<UploadResponse> uploadAppBanner(
+    Uint8List fileBytes,
+    String newFilename,
+  ) async {
+    var token = await SecureStorage.getToken();
+    final url = Uri.parse("${baseUrl}upload/app-banner");
+    final request = http.MultipartRequest('POST', url);
+    final mimeType = lookupMimeType(newFilename) ?? 'application/octet-stream';
+    final mediaType = MediaType.parse(mimeType);
+
+    final multipartFile = http.MultipartFile.fromBytes(
+      'app-banner',
+      fileBytes,
+      filename: newFilename,
+      contentType: mediaType,
+    );
+    request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(multipartFile);
+    request.fields['filename'] = newFilename;
+
+    try {
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        logger.d("upload app banner : ${data}");
+        return UploadResponse.fromJson(data);
+      } else {
+        logger.e("upload app banner : ${data['message']}");
+        return UploadResponse(error: true, message: data['message']);
+      }
+    } catch (e) {
+      logger.e("upload app banner : ${e.toString()}");
+      return UploadResponse(error: true, message: e.toString());
+    }
+  }
+
+  Future<getAppBannerResponse> getAllAppBanner() async {
+    final url = Uri.parse("${baseUrl}app-banner");
+    try {
+      final response = await http.get(
+        url,
+        headers: <String, String>{'Content-Type': 'application/json'},
+      );
+
+      var data = jsonDecode(response.body);
+      logger.d("get all app banner : ${data}");
+
+      getAppBannerResponse responseBody = getAppBannerResponse.fromJson(data);
+      return responseBody;
+    } on SocketException catch (e) {
+      logger.e("get all app banner : Tidak ada koneksi internet");
+      return getAppBannerResponse(message: NO_INTERNET_CONNECTION, error: true);
+    } catch (e, stackTrace) {
+      logger.e("get all app banner : $e");
+
+      return getAppBannerResponse(message: "Network error : $e", error: true);
+    }
+  }
+
+  Future<AppBannerResponse> addAppBanner(AppBanner banner) async {
+    final url = Uri.parse("${baseUrl}app-banner");
+    var token = await SecureStorage.getToken();
+    try {
+      final response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token}',
+        },
+        body: jsonEncode({'link': banner.link, 'image_url': banner.imageUrl}),
+      );
+
+      var data = jsonDecode(response.body);
+      logger.d("add app banner : ${data}");
+      return AppBannerResponse.fromJson(data);
+    } on SocketException catch (e) {
+      logger.e("add app banner : Tidak ada koneksi internet");
+      return AppBannerResponse(message: NO_INTERNET_CONNECTION, error: true);
+    } catch (e, stackTrace) {
+      logger.e("add app banner : $e");
+
+      return AppBannerResponse(message: "Network error : $e", error: true);
+    }
+  }
+
+  Future<AppBannerResponse> updateAppBanner(AppBanner banner) async {
+    final url = Uri.parse("${baseUrl}app-banner/${banner.id}");
+    var token = await SecureStorage.getToken();
+    try {
+      final response = await http.patch(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token}',
+        },
+        body: jsonEncode({'link': banner.link, 'image_url': banner.imageUrl}),
+      );
+
+      var data = jsonDecode(response.body);
+      logger.d("update app banner : ${data}");
+      return AppBannerResponse.fromJson(data);
+    } on SocketException catch (e) {
+      logger.e("update app banner : Tidak ada koneksi internet");
+      return AppBannerResponse(message: NO_INTERNET_CONNECTION, error: true);
+    } catch (e, stackTrace) {
+      logger.e("update app banner : $e");
+
+      return AppBannerResponse(message: "Network error : $e", error: true);
+    }
+  }
+
+  Future<AppBannerResponse> removeAppBanner(AppBanner banner) async {
+    final url = Uri.parse("${baseUrl}app-banner/${banner.id}");
+    var token = await SecureStorage.getToken();
+    try {
+      final response = await http.delete(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token}',
+        },
+      );
+
+      var data = jsonDecode(response.body);
+      logger.d("delete app banner : ${data}");
+      return AppBannerResponse.fromJson(data);
+    } on SocketException catch (e) {
+      logger.e("delete app banner : Tidak ada koneksi internet");
+      return AppBannerResponse(message: NO_INTERNET_CONNECTION, error: true);
+    } catch (e, stackTrace) {
+      logger.e("delete app banner : $e");
+
+      return AppBannerResponse(message: "Network error : $e", error: true);
+    }
+  }
+
+  Future<TexturesResponse> getTextures() async {
+    final url = Uri.parse("${baseUrl}designer/look/texture");
+    var token = await SecureStorage.getToken();
+    try {
+      final response = await http.get(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token}',
+        },
+      );
+
+      var data = jsonDecode(response.body);
+      logger.d("get textures : ${data}");
+      return TexturesResponse.fromJson(data);
+    } on SocketException catch (e) {
+      logger.e("get textures : Tidak ada koneksi internet");
+      return TexturesResponse(message: NO_INTERNET_CONNECTION, error: true);
+    } catch (e, stackTrace) {
+      logger.e("get textures : $e");
+
+      return TexturesResponse(message: "Network error : $e", error: true);
+    }
+  }
+
+  Future<UploadTextureResponse> uploadTexture(
+    String lookId,
+    String title,
+    String description,
+    String? hex,
+    String? urlTexture,
+  ) async {
+    final url = Uri.parse("${baseUrl}designer/look/texture");
+    var token = await SecureStorage.getToken();
+
+    try {
+      // Buat map secara dinamis
+      final Map<String, dynamic> body = {
+        'look_id': lookId,
+        'title': title,
+        'description': description,
+      };
+
+      // Tambahkan jika tidak null/kosong
+      if (hex != null && hex.trim().isNotEmpty) {
+        body['hex'] = "#${hex}";
+      }
+
+      if (urlTexture != null && urlTexture.trim().isNotEmpty) {
+        body['url_texture'] = urlTexture;
+      }
+
+      final response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      final data = jsonDecode(response.body);
+      logger.d("add texture : $data");
+
+      return UploadTextureResponse.fromJson(data);
+    } on SocketException {
+      logger.e("add texture : Tidak ada koneksi internet");
+      return UploadTextureResponse(
+        message: NO_INTERNET_CONNECTION,
+        error: true,
+      );
+    } catch (e) {
+      logger.e("add texture : $e");
+      return UploadTextureResponse(message: "Network error : $e", error: true);
+    }
+  }
+
+  Future<RemoveTextureResponse> removeTexture(String id) async {
+    final url = Uri.parse("${baseUrl}designer/look/texture?id=${id}");
+    var token = await SecureStorage.getToken();
+    try {
+      final response = await http.delete(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token}',
+        },
+      );
+
+      var data = jsonDecode(response.body);
+      logger.d("remove texture : ${data}");
+      return RemoveTextureResponse.fromJson(data);
+    } on SocketException catch (e) {
+      logger.e("remove texture : Tidak ada koneksi internet");
+      return RemoveTextureResponse(
+        message: NO_INTERNET_CONNECTION,
+        error: true,
+      );
+    } catch (e, stackTrace) {
+      logger.e("remove texture : $e");
+
+      return RemoveTextureResponse(message: "Network error : $e", error: true);
+    }
+  }
 }

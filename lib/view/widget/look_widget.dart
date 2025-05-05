@@ -4,6 +4,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:jahit_baju_admin/controller/look_controller.dart';
 import 'package:jahit_baju_admin/data/model/designer.dart';
 import 'package:jahit_baju_admin/data/model/look.dart';
+import 'package:jahit_baju_admin/util/util.dart';
 import 'package:jahit_baju_admin/view/dashboard_screen.dart';
 import 'package:jahit_baju_admin/view/widget/look_edit_widget.dart';
 import 'package:provider/provider.dart';
@@ -22,15 +23,18 @@ class _LookWidgetState extends State<LookWidget> {
     super.initState();
 
     final controller = Provider.of<LookController>(context, listen: false);
-    controller.setDesigner(widget.designer);
-    controller.fetchAllLooks();
+    Future.microtask(() {
+      controller.setDesigner(widget.designer);
+      controller.fetchAllLooks();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<LookController>(
       builder: (context, controller, child) {
-        return Scaffold(
+        return Stack(
+          children: [Scaffold(
           appBar: AppBar(title: Text("Look Desainer"), centerTitle: true),
           body: ListView.builder(
             shrinkWrap: true,
@@ -105,6 +109,8 @@ class _LookWidgetState extends State<LookWidget> {
             },
             child: Icon(Icons.add),
           ),
+        ),
+        if(controller.loading) loadingWidget()],
         );
       },
     );

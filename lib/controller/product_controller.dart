@@ -1,3 +1,10 @@
+import 'dart:io';
+import 'dart:math';
+import 'dart:typed_data';
+import 'package:intl/intl.dart';
+import 'package:jahit_baju_admin/data/model/app_banner.dart';
+import 'package:jahit_baju_admin/data/remote/response/upload_response.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:jahit_baju_admin/data/model/product.dart';
 import 'package:jahit_baju_admin/data/model/user.dart';
@@ -53,14 +60,16 @@ class ProductController extends ChangeNotifier {
     _loading = true;
     _errorMsg = null;
     notifyListeners();
-    RemoveProductResponse response = await apiService.productDelete(product.id!);
+    RemoveProductResponse response = await apiService.productDelete(
+      product.id!,
+    );
     if (response.error && response.data == null) {
       _errorMsg =
           response.message ??
           "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
       _loading = false;
       notifyListeners();
-    } else {      
+    } else {
       _loading = false;
       notifyListeners();
     }
@@ -95,7 +104,8 @@ class ProductController extends ChangeNotifier {
       notifyListeners();
     } else {
       _currentProduct = response.product!;
-      _loading = false;refresh();
+      _loading = false;
+      refresh();
       notifyListeners();
     }
   }
@@ -104,4 +114,34 @@ class ProductController extends ChangeNotifier {
     _products = [];
     fetchAllProduct();
   }
+
+  Future<List<String>> uploadImage(List<Uint8List> imageFiles) async {
+    _errorMsg = null;
+    List<String> images = [];
+    for (int i = 0; i < imageFiles.length; i++) {
+      var filename = generateProductImageFilename();
+
+      UploadResponse response = await apiService.uploadProductImage(
+        imageFiles[i],
+        filename,
+      );
+      if (response.error) {
+        _errorMsg = response.message;
+        notifyListeners();
+      } else {
+        images.add(response.filename!);
+      }
+    }
+
+    return images ?? [];
+  }
+
+  String generateProductImageFilename() {
+    final random = Random().nextInt(100000); // random integer 0-99999
+    final now = DateTime.now();
+    final formattedDate = DateFormat('yyyyMMdd_HHmmss').format(now);
+
+    return 'product_image_${random}_$formattedDate.jpg';
+  }
+
 }

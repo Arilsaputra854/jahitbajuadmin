@@ -3,7 +3,6 @@ import 'package:jahit_baju_admin/data/model/note.dart';
 import 'package:jahit_baju_admin/data/model/product.dart';
 import 'package:jahit_baju_admin/data/remote/api_service.dart';
 import 'package:jahit_baju_admin/data/remote/response/product_note_response.dart';
-import 'package:jahit_baju_admin/data/remote/response/term_condition_response.dart';
 
 class NoteController extends ChangeNotifier {
   ApiService apiService;

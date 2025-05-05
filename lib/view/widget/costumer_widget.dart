@@ -43,23 +43,61 @@ class CustomerDataSource extends DataGridSource {
               ),
               DataGridCell<String>(
                 columnName: 'Tanggal Update Terakhir',
-                value:customFormatDate(user.lastUpdate!),
+                value: customFormatDate(user.lastUpdate!),
+              ),
+              DataGridCell<String>(
+                columnName: 'Tanggal Penghapusan',
+                value:
+                    user.deleteAt != null
+                        ? customFormatDate(user.deleteAt!)
+                        : "-",
               ),
               DataGridCell<Widget>(
                 columnName: 'Aksi',
-                value:
-                    user.role == "Admin"
-                        ? SizedBox() // Jika Admin, tampilkan widget kosong
-                        : Row(
-                          children: [
+                value: FutureBuilder(
+                  future: controller.getCurrentUser(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return SizedBox(); // Atau loading indicator kecil
+                    }
+
+                    if (!snapshot.hasData || snapshot.hasError) {
+                      return SizedBox(); // Atau pesan error
+                    }
+
+                    final currentUser = snapshot.data!;
+
+                    if (currentUser.role == "Superadmin" &&
+                        user.role == "User") {
+                      return Row(
+                        children: [
+                          if (user.deleteAt != null)
+                            IconButton(
+                              icon: Icon(
+                                Icons.replay_outlined,
+                                color: Colors.blue,
+                              ),
+                              onPressed:
+                                  () => activateCustomer(
+                                    context,
+                                    controller,
+                                    user,
+                                  ),
+                            )
+                          else
                             IconButton(
                               icon: Icon(Icons.delete, color: Colors.red),
                               onPressed:
                                   () =>
-                                      removeProduct(context, controller, user),
+                                      removeCustomer(context, controller, user),
                             ),
-                          ],
-                        ),
+                        ],
+                      );
+                    }
+
+                    return SizedBox();
+                  },
+                ),
               ),
             ],
           );
@@ -93,205 +131,360 @@ class CustomerDataSource extends DataGridSource {
           }).toList(),
     );
   }
-}
 
-Widget costumerWidget(BuildContext context) {
-  return Consumer<CostumerController>(
-    builder: (context, controller, child) {
-      controller.fetchAllUser();
-      return Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          title: Text(
-            "Data Customer",
-            style: TextStyle(fontWeight: FontWeight.bold),
+  void updateCustomer(
+    BuildContext context,
+    CostumerController controller,
+    User user,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Aktivasi akun"),
+          content: Text("Apakah Anda ingin mengaktifkan akun ini kembali?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Batal"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                controller.removeUser(user).then((_) {
+                  if (controller.errorMsg != null) {
+                    Fluttertoast.showToast(msg: "${controller.errorMsg}");
+                  } else {
+                    Fluttertoast.showToast(
+                      msg: "Berhasil mengaktifkan pengguna!",
+                    );
+                    controller.refresh();
+                    Navigator.pop(context);
+                  }
+                });
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text("Aktif", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  activateCustomer(
+    BuildContext context,
+    CostumerController controller,
+    User user,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Konfirmasi Aktivasi Akun"),
+          content: Text(
+            "Apakah Anda yakin ingin mengaktifkan kembali pengguna ini?",
           ),
-        ),
-        body: Padding(
-          padding: EdgeInsets.all(10.w),
-          child:
-              controller.users.isEmpty
-                  ? Center(child: CircularProgressIndicator())
-                  : SfDataGrid(
-                    source: CustomerDataSource(
-                      context,
-                      controller,
-                      controller.users,
-                    ),columnWidthMode: ColumnWidthMode.fill,
-                    gridLinesVisibility: GridLinesVisibility.both,
-                    headerGridLinesVisibility: GridLinesVisibility.both,
-                    columns: [
-                      GridColumn(
-                        columnName: 'No',
-                        label: Container(
-                          padding: EdgeInsets.all(12.w),
-                          alignment:
-                              Alignment
-                                  .center, // Tengah secara horizontal & vertikal
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey, width: 1),
-                            ),
-                          ),
-                          child: Text(
-                            'No',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      GridColumn(
-                        columnName: 'Nama',
-                        label: Container(
-                          padding: EdgeInsets.all(12.w),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey, width: 1),
-                            ),
-                          ),
-                          child: Text(
-                            'Nama',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      GridColumn(
-                        columnName: 'Email',
-                        label: Container(
-                          padding: EdgeInsets.all(12.w),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey, width: 1),
-                            ),
-                          ),
-                          child: Text(
-                            'Email',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      GridColumn(
-                        columnName: 'Nomor HP',
-                        label: Container(
-                          padding: EdgeInsets.all(12.w),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey, width: 1),
-                            ),
-                          ),
-                          child: Text(
-                            'Nomor HP',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      GridColumn(
-                        columnName: 'Alamat',
-                        label: Container(
-                          padding: EdgeInsets.all(12.w),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey, width: 1),
-                            ),
-                          ),
-                          child: Text(
-                            'Alamat',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      GridColumn(
-                        columnName: 'Role',
-                        label: Container(
-                          padding: EdgeInsets.all(12.w),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey, width: 1),
-                            ),
-                          ),
-                          child: Text(
-                            'Role',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      GridColumn(
-                        columnName: 'Email Terverifikasi',
-                        label: Container(
-                          padding: EdgeInsets.all(12.w),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey, width: 1),
-                            ),
-                          ),
-                          child: Text(
-                            'Email Terverifikasi',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      GridColumn(
-                        columnName: 'Akses Fitur Kostumisasi',
-                        label: Container(
-                          padding: EdgeInsets.all(12.w),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey, width: 1),
-                            ),
-                          ),
-                          child: Text(
-                            'Akses Fitur Kostumisasi',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      GridColumn(
-                        columnName: 'Tanggal Update Terakhir',
-                        label: Container(
-                          padding: EdgeInsets.all(12.w),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey, width: 1),
-                            ),
-                          ),
-                          child: Text(
-                            'Tanggal Update Terakhir',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      GridColumn(
-                        columnName: 'Aksi',
-                        label: Container(
-                          padding: EdgeInsets.all(12.w),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey, width: 1),
-                            ),
-                          ),
-                          child: Text(
-                            'Aksi',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-        ),
-      );
-    },
-  );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Batal"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                controller.activateUser(user).then((_) {
+                  if (controller.errorMsg != null) {
+                    Fluttertoast.showToast(msg: controller.errorMsg!);
+                  } else {
+                    Fluttertoast.showToast(
+                      msg: "Berhasil memulihkan pengguna!",
+                    );
+                    Navigator.pop(context);
+                  }
+                });
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text("Aktivasi", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
-void removeProduct(
+class CostumerWidget extends StatefulWidget {
+  const CostumerWidget({super.key});
+
+  @override
+  State<CostumerWidget> createState() => _CostumerWidgetState();
+}
+
+class _CostumerWidgetState extends State<CostumerWidget> {
+  @override
+  void initState() {
+    final controller = Provider.of<CostumerController>(context, listen: false);
+    Future.microtask(() {
+      controller.fetchAllUser();
+    });
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<CostumerController>(
+      builder: (context, controller, child) {
+        return Scaffold(
+          appBar: AppBar(
+            actions: [
+              IconButton(
+                onPressed: () {
+                  controller.refresh();
+                },
+                icon: const Icon(Icons.refresh, color: Colors.black),
+              ),
+            ],
+            centerTitle: true,
+            title: Text(
+              "Data Customer",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          body: Padding(
+            padding: EdgeInsets.all(10.w),
+            child:
+                controller.users.isEmpty
+                    ? Center(child: CircularProgressIndicator())
+                    : SfDataGrid(
+                      source: CustomerDataSource(
+                        context,
+                        controller,
+                        controller.users,
+                      ),
+                      columnWidthMode: ColumnWidthMode.fill,
+                      gridLinesVisibility: GridLinesVisibility.both,
+                      headerGridLinesVisibility: GridLinesVisibility.both,
+                      columns: [
+                        GridColumn(
+                          columnName: 'No',
+                          label: Container(
+                            padding: EdgeInsets.all(12.w),
+                            alignment:
+                                Alignment
+                                    .center, // Tengah secara horizontal & vertikal
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'No',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        GridColumn(
+                          columnName: 'Nama',
+                          label: Container(
+                            padding: EdgeInsets.all(12.w),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Nama',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        GridColumn(
+                          columnName: 'Email',
+                          label: Container(
+                            padding: EdgeInsets.all(12.w),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Email',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        GridColumn(
+                          columnName: 'Nomor HP',
+                          label: Container(
+                            padding: EdgeInsets.all(12.w),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Nomor HP',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        GridColumn(
+                          columnName: 'Alamat',
+                          label: Container(
+                            padding: EdgeInsets.all(12.w),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Alamat',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        GridColumn(
+                          columnName: 'Role',
+                          label: Container(
+                            padding: EdgeInsets.all(12.w),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Role',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        GridColumn(
+                          columnName: 'Email Terverifikasi',
+                          label: Container(
+                            padding: EdgeInsets.all(12.w),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Email Terverifikasi',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        GridColumn(
+                          columnName: 'Akses Fitur Kostumisasi',
+                          label: Container(
+                            padding: EdgeInsets.all(12.w),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Akses Fitur Kostumisasi',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        GridColumn(
+                          columnName: 'Tanggal Update Terakhir',
+                          label: Container(
+                            padding: EdgeInsets.all(12.w),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Tanggal Update Terakhir',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        GridColumn(
+                          columnName: 'Tanggal Penghapusan Akun',
+                          label: Container(
+                            padding: EdgeInsets.all(12.w),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Tanggal Penghapusan Akun',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        GridColumn(
+                          columnName: 'Aksi',
+                          label: Container(
+                            padding: EdgeInsets.all(12.w),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Aksi',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+void removeCustomer(
   BuildContext context,
   CostumerController controller,
   User user,
@@ -314,8 +507,8 @@ void removeProduct(
                   Fluttertoast.showToast(msg: "${controller.errorMsg}");
                 } else {
                   Fluttertoast.showToast(msg: "Berhasil menghapus pengguna!");
-                  controller.refresh();
                   Navigator.pop(context);
+                  controller.refresh();
                 }
               });
             },

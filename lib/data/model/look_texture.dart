@@ -2,14 +2,14 @@
 import 'package:jahit_baju_admin/data/model/texture.dart';
 
 class LookTexture {
-  String id;
+  String? id;
   String lookId;
   String textureId;
   TextureLook texture;
   final DateTime? lastUpdate;
 
   LookTexture({
-    required this.id,
+    this.id,
     required this.lookId,
     required this.textureId,
     required this.texture,

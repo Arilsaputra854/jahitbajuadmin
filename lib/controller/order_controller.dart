@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:jahit_baju_admin/data/model/look.dart';
 import 'package:jahit_baju_admin/data/model/order.dart';
 import 'package:jahit_baju_admin/data/model/product.dart';
@@ -109,16 +113,24 @@ class OrderController extends ChangeNotifier {
 
   Future<String?> fetchSvg(String filename) async {
     _errorMsg = null;
-    final response = await apiService.getCustomDesign(filename);
-    print(response);
-    if (response != null) {      
-      if (response['data'] != null) {
-        return response['data'];
-      } else {
-        _errorMsg = "Tidak dapat memuat gambar, Silakan coba lagi nanti.";
-      }
+  final url = Uri.parse('${ApiService.baseUrl}upload/$filename');
+
+  try {
+    final response = await http.get(
+      url,
+    );
+
+    if (response.statusCode == 200) {
+      return response.body;
     } else {
-      _errorMsg = "Tidak dapat memuat gambar, Silakan coba lagi nanti.";
+      _errorMsg = "Tidak dapat menemukan desain.";
+      return null;
     }
+  } catch (e) {
+    _errorMsg = e.toString();
+    notifyListeners();    
+    return null;
   }
+}
+
 }

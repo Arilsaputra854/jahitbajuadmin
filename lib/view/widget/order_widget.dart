@@ -6,7 +6,6 @@ import 'package:jahit_baju_admin/util/util.dart'
     show convertToRupiah, loadingWidget, shimmerWidget;
 import 'package:jahit_baju_admin/view/widget/order_edit_widget.dart';
 import 'package:provider/provider.dart';
-import 'package:shimmer/shimmer.dart';
 
 class OrderWidget extends StatefulWidget {
   const OrderWidget({super.key});
@@ -22,8 +21,10 @@ class _OrderWidgetState extends State<OrderWidget>
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
     final controller = Provider.of<OrderController>(context, listen: false);
     controller.fetchAllOrder();
+    });
 
     _tabController = TabController(length: 5, vsync: this);
   }

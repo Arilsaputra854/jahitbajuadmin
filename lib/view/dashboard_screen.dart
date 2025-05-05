@@ -2,6 +2,7 @@ import 'package:easy_sidemenu/easy_sidemenu.dart';
 import 'package:flutter/material.dart';
 import 'package:jahit_baju_admin/util/token_storage.dart';
 import 'package:jahit_baju_admin/view/login_screen.dart';
+import 'package:jahit_baju_admin/view/widget/banner_widget.dart';
 import 'package:jahit_baju_admin/view/widget/costumer_widget.dart';
 import 'package:jahit_baju_admin/view/widget/delivery_widget.dart';
 import 'package:jahit_baju_admin/view/widget/designer_widget.dart';
@@ -30,12 +31,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     items = [
       SideMenuItem(
-        title: 'Dashboard',
+        title: 'Banner Aplikasi',
         onTap: (index, _) {
           sideMenu.changePage(index);
         },
         icon: Icon(Icons.home),
-        badgeContent: Text('3', style: TextStyle(color: Colors.white)),
       ),
       SideMenuItem(
         title: 'Jasa Pengiriman',
@@ -86,6 +86,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
             icon: const Icon(Icons.discount),
           ),
+          
+          SideMenuItem(
+            title: 'Catatan Produk',
+            onTap: (index, _) {
+              sideMenu.changePage(index);
+            },
+            icon: const Icon(Icons.note_alt),
+          ),
         ],
       ),
       SideMenuExpansionItem(
@@ -108,13 +116,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
             icon: const Icon(Icons.policy),
           ),
-          SideMenuItem(
-            title: 'Catatan Produk',
-            onTap: (index, _) {
-              sideMenu.changePage(index);
-            },
-            icon: const Icon(Icons.note_alt),
-          ),
         ],
       ),
       SideMenuItem(
@@ -133,34 +134,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          SideMenu(
-            controller: sideMenu,
-            title: Image.asset('assets/logo/title_jahit_baju.png'),
-            footer: Text('Jahit Baju Admin'),
-            items: items,
-          ),
-          Expanded(
-            child: PageView(
-              controller: pageController,
-              children: [
-                Center(child: Text('Dashboard')),
-                deliveryWidget(context),
-                packagingWidget(context),
-                OrderWidget(),
-                costumerWidget(context),
-                readyToWearWidget(context),
-                designerWidget(context),
-                termConditionWidget(context),
-                productCareTermWidget(context),
-                ProductNoteWidget(),
-              ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 900) {
+          // Tampilkan pesan jika ukuran layar terlalu kecil
+          return Scaffold(
+            body: Center(
+              child: Text(
+                "Hanya tersedia di versi desktop",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ),
+          );
+        }
+
+        return Scaffold(
+          body: Row(
+            children: [
+              SideMenu(
+                controller: sideMenu,
+                title: Image.asset('assets/logo/title_jahit_baju.png'),
+                footer: Text('Jahit Baju Admin'),
+                items: items,
+              ),
+              Expanded(
+                child: PageView(
+                  controller: pageController,
+                  children: [
+                    BannerWidget(),
+                    DeliveryWidget(),
+                    PackagingWidget(),
+                    OrderWidget(),
+                    CostumerWidget(),
+                    readyToWearWidget(),
+                    DesignerWidget(),
+                    ProductNoteWidget(),
+                    PrivacyWidget(),
+                    ProductCareTermWidget(),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

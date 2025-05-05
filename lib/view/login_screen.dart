@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:jahit_baju_admin/controller/login_controller.dart';
 import 'package:jahit_baju_admin/util/token_storage.dart';
+import 'package:jahit_baju_admin/util/util.dart';
 import 'package:jahit_baju_admin/view/dashboard_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -19,7 +20,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Consumer<LoginController>(
       builder: (context, controller, child) {
-        return Scaffold(
+        return Stack(
+          children: [Scaffold(
           body: SizedBox(
             height: double.infinity,
             width: double.infinity,
@@ -59,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         SizedBox(height: 20.h),
-                        Text("Masuk sebagai Admin"),
+                        Text("Masuk sebagai Admin atau Super Admin"),
                         Padding(
                           padding: EdgeInsets.all(10),
                           child: Form(
@@ -95,6 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                 ),
+                                SizedBox(height:10),
                                 TextFormField(
                                   style: TextStyle(
                                     fontSize: 14.sp,
@@ -146,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(5),
                               ),
-                              backgroundColor: Colors.white,
+                              backgroundColor: Colors.red,
                             ),
                             onPressed: () async {
                               if (formKey.currentState!.validate()) {
@@ -167,6 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Text(
                               "Login",
                               style: TextStyle(
+                                color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14.sp,
                               ),
@@ -180,6 +184,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ),
+        ),
+        if(controller.loading) loadingWidget()],
         );
       },
     );

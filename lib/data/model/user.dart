@@ -10,6 +10,7 @@ class User {
   bool customAccess;
   String role;
   DateTime? lastUpdate;
+  DateTime? deleteAt;
   String? token;
   String? refreshToken;
   Address? address;
@@ -28,6 +29,7 @@ class User {
     this.lastUpdate,
     this.token,
     this.refreshToken,
+    this.deleteAt,
     this.address,
   });
 
@@ -45,6 +47,7 @@ class User {
       role: json['role'] ?? "User",
       lastUpdate: json['last_update'] != null ? DateTime.parse(json['last_update']) : null,
       token: json['token'],
+      deleteAt: json['delete_at'] != null ? DateTime.parse(json['delete_at']) : null,
       refreshToken: json['refresh_token'],
       address: json['address'] != null ? Address.fromJson(json['address']) : null,
     );
@@ -63,6 +66,7 @@ class User {
       'custom_access': customAccess,
       'role': role,
       'last_update': lastUpdate?.toIso8601String(),
+      'delete_at': deleteAt?.toIso8601String(),
       'token': token,
       'refresh_token': refreshToken,
       'address': address?.toJson(),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:jahit_baju_admin/controller/banner_controller.dart';
 import 'package:jahit_baju_admin/controller/costumer_controller.dart';
 import 'package:jahit_baju_admin/controller/designer_controller.dart';
 import 'package:jahit_baju_admin/controller/login_controller.dart';
@@ -67,6 +68,10 @@ class MyApp extends StatelessWidget {
         
          ChangeNotifierProvider(
           create: (context) => OrderController(ApiService(context)),
+        ),
+
+         ChangeNotifierProvider(
+          create: (context) => BannerController(ApiService(context)),
         ),
       ],
 

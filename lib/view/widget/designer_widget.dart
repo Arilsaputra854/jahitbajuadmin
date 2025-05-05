@@ -3,13 +3,37 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:jahit_baju_admin/controller/designer_controller.dart';
 import 'package:jahit_baju_admin/data/model/designer.dart';
+import 'package:jahit_baju_admin/util/util.dart';
 import 'package:jahit_baju_admin/view/widget/look_widget.dart';
 import 'package:provider/provider.dart';
-Widget designerWidget(BuildContext context) {
-  return Consumer<DesignerController>(
-    builder: (context, controller, child) {
+
+class DesignerWidget extends StatefulWidget {
+  const DesignerWidget({super.key});
+
+  @override
+  State<DesignerWidget> createState() => _DesignerWidgetState();
+}
+
+class _DesignerWidgetState extends State<DesignerWidget> {
+
+  @override
+  void initState() {
+    
+      final controller = Provider.of<DesignerController>(context, listen: false);
+      Future.microtask(() {
+        
       controller.fetchAllDesigners();
-      return Scaffold(
+      },);
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    
+    return Consumer<DesignerController>(
+    builder: (context, controller, child) {
+      return Stack(children:[ Scaffold(
         appBar: AppBar(
           actions: [
                 TextButton.icon(
@@ -48,7 +72,7 @@ Widget designerWidget(BuildContext context) {
                           Text(
                             controller.designers[index].name,
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -61,14 +85,14 @@ Widget designerWidget(BuildContext context) {
                                   text: 'Showcase: ',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12.sp,
+                                    fontSize: 14.sp,
                                   ),
                                 ),
                                 TextSpan(
                                   text: controller.designers[index].description,
                                   style: TextStyle(
                                     fontStyle: FontStyle.italic,
-                                    fontSize: 12.sp,
+                                    fontSize: 14.sp,
                                   ),
                                 ),
                               ],
@@ -102,10 +126,13 @@ Widget designerWidget(BuildContext context) {
           },
           child: Icon(Icons.add),
         ),
-      );
+      ),
+        if(controller.loading) loadingWidget()],);
     },
   );
+  }
 }
+
 
 void removeDesigner(
   BuildContext context,

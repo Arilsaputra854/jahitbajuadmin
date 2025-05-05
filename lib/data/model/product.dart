@@ -20,6 +20,7 @@ class Product {
   final List<String>? materials;
   final String? productCode;
   final int? weight;
+  final bool? enable;
   final String lastUpdate;
 
   Product({
@@ -35,6 +36,7 @@ class Product {
     required this.tags,
     required this.category,
     required this.size,
+    this.enable,
     this.colors,
     this.materials,
     this.productCode,
@@ -60,6 +62,7 @@ class Product {
       materials: json['materials'] != null ? List<String>.from(json['materials']) : [],
       productCode: json['product_code'],
       weight: json['weight'] ?? 0,
+      enable: json['enable'] ?? false,
       lastUpdate: json['last_update'] ?? DateTime.now().toIso8601String(),
     );
   }

@@ -12,6 +12,9 @@ class LoginController extends ChangeNotifier {
   String? _password;
   String? get password => _password;
 
+  bool _loading = false;
+  bool get loading => _loading;
+
 
   String? _email;
   String? get email => _email;
@@ -39,19 +42,20 @@ class LoginController extends ChangeNotifier {
 
   Future<String?> login() async {
     _errorMsg = null;
+    _loading = true;
     notifyListeners();
     if(_email != null && _password != null){
       LoginResponse response =  await apiService.login(_email!, _password!);
       if(response.error){
-        _errorMsg =  response.message ?? "Terjadi kesalahan, tidak dapat melakukan login.";        
-      notifyListeners();  
+        _errorMsg =  response.message ?? "Terjadi kesalahan, tidak dapat melakukan login.";    
       }else{
         return response.token;
       }
     }else{
       _errorMsg = "Silakan lengkapi email dan password anda.";
-      notifyListeners();
     }
+    _loading = false;
+      notifyListeners();
      
   }
 }

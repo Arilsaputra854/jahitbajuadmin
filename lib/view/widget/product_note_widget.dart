@@ -4,15 +4,33 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:jahit_baju_admin/controller/note_controller.dart';
 import 'package:jahit_baju_admin/data/model/note.dart';
 import 'package:jahit_baju_admin/data/model/product.dart';
+import 'package:jahit_baju_admin/util/util.dart';
 import 'package:provider/provider.dart';
 
-class ProductNoteWidget extends StatelessWidget {
+class ProductNoteWidget extends StatefulWidget {
+  const ProductNoteWidget({super.key});
+
+  @override
+  State<ProductNoteWidget> createState() => _ProductNoteWidgetState();
+}
+
+class _ProductNoteWidgetState extends State<ProductNoteWidget> {
+
+  @override
+  void initState() {
+    final controller = Provider.of<NoteController>(context,listen: false);
+    Future.microtask((){
+      
+        controller.fetchNote();
+
+    });
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<NoteController>(
       builder: (context, controller, child) {
-        controller.fetchNote();
-
         TextEditingController customController = TextEditingController(
           text: controller.customNote?.data ?? "",
         );
@@ -20,7 +38,7 @@ class ProductNoteWidget extends StatelessWidget {
           text: controller.rtwNote?.data ?? "",
         );
 
-        return Scaffold(
+        return Stack(children:[Scaffold(
           appBar: AppBar(title: Text("Catatan Produk")),
           body: SingleChildScrollView(
             padding: EdgeInsets.all(16),
@@ -55,10 +73,12 @@ class ProductNoteWidget extends StatelessWidget {
               ],
             ),
           ),
-        );
+        ),
+        if(controller.loading) loadingWidget()]);
       },
     );
-  }
+}
+
 
   Widget _buildNoteSection({
     required String title,

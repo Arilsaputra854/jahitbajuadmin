@@ -11,95 +11,103 @@ class PackagingController extends ChangeNotifier {
   String? _errorMsg;
   String? get errorMsg => _errorMsg;
 
-
   bool _loading = false;
   bool get loading => _loading;
 
-  List<Packaging> _packaging = [];
-  List<Packaging> get packaging => _packaging;
+  List<Packaging> _packagings = [];
+  List<Packaging> get packaging => _packagings;
 
   Packaging? _currentPackaging;
   Packaging? get currentPackaging => _currentPackaging;
 
-  int? _weight = 500; //in grams
-  int? get weight => _weight;
-
-
   PackagingController(this.apiService);
 
-  setCurrentPackaging(Packaging? newPackaging){
+  setCurrentPackaging(Packaging? newPackaging) {
     _currentPackaging = newPackaging;
     notifyListeners();
   }
 
   Future<void> fetchAllPackaging() async {
-    if (_packaging.isEmpty) {
+    if (_packagings.isEmpty) {
+      _errorMsg = null;
       _loading = true;
       notifyListeners();
-      PackagingResponse response = await apiService.getAllPackaging();
+
+      PackagingsResponse response = await apiService.getAllPackaging();
       if (response.error) {
         _errorMsg =
             response.message ??
             "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
-        _packaging = [];
-        _loading = false;
-        notifyListeners();
+        _packagings = [];
       } else {
-        _packaging = response.packagings!;
-        _loading = false;
-        notifyListeners();
+        _packagings = response.packagings!;
       }
+      _loading = false;
+      notifyListeners();
     }
   }
 
-  Future<void> addPackaging(String name, int price,  String description) async {
-    PackagingResponse response =  await apiService.addPackaging( name, price, description);
-      if(response.error){
-         _errorMsg =
-            response.message ??
-            "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
-        _loading = false;
-        _packaging = [];
-        fetchAllPackaging();
-        notifyListeners();
-      }else{
-        _loading = false;
-        notifyListeners();
-      }
+  Future<void> addPackaging(String name, int price, String description) async {
+    _errorMsg = null;
+    PackagingResponse response = await apiService.addPackaging(
+      name,
+      price,
+      description,
+    );
+    if (response.error) {
+      _errorMsg =
+          response.message ??
+          "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
+    } else {
+      refresh();
+    }
+    _loading = false;
+    notifyListeners();
   }
 
   Future<void> removePackaging(String id) async {
-    PackagingResponse response =  await apiService.removePackaging(id);
-      if(response.error){
-         _errorMsg =
-            response.message ??
-            "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
-        _loading = false;
-        _packaging = [];
-        fetchAllPackaging();
-        notifyListeners();
-      }else{
-        _loading = false;
-        notifyListeners();
-      }
+    _errorMsg = null;
+    PackagingResponse response = await apiService.removePackaging(id);
+    if (response.error) {
+      _errorMsg =
+          response.message ??
+          "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
+    } else {
+      refresh();
+    }
+    _loading = false;
+    notifyListeners();
   }
 
-  Future<void> updatePackaging(String name, int price, String description) async {
-    if(_currentPackaging != null){
-      PackagingResponse response =  await apiService.updatePackaging(_currentPackaging!.id, name, price, description);
-      if(response.error){
-         _errorMsg =
+  Future<void> updatePackaging(
+    String name,
+    int price,
+    String description,
+  ) async {
+    if (_currentPackaging != null) {
+      _errorMsg = null;
+      PackagingResponse response = await apiService.updatePackaging(
+        _currentPackaging!.id,
+        name,
+        price,
+        description,
+      );
+      if (response.error) {
+        _errorMsg =
             response.message ??
             "Maaf, Terjadi kesalahan, silakan coba lagi nanti.";
         _loading = false;
-        _packaging = [];
-        fetchAllPackaging();
-        notifyListeners();
-      }else{
-        _loading = false;
-        notifyListeners();
+      } else {
+        refresh();
       }
+
+      _loading = false;
+      notifyListeners();
     }
   }
 
+  void refresh() {
+    _packagings = [];
+    fetchAllPackaging();
+  }
 }

@@ -16,7 +16,6 @@ class Look {
   int sold;
   int seen;
   int weight;
-  List<LookTexture>? textures;
 
   Look({
      this.id,
@@ -32,8 +31,7 @@ class Look {
     required this.lastUpdate,
     required this.sold,
     required this.seen,
-    required this.weight,
-    this.textures,
+    required this.weight
   });
 
   factory Look.fromJson(Map<String, dynamic> json) {
@@ -58,11 +56,6 @@ class Look {
       sold: json['sold'],
       seen: json['seen'],
       weight: json['weight'],
-      textures: json['textures'] != null
-          ? (json['textures'] as List)
-              .map((item) => LookTexture.fromJson(item))
-              .toList()
-          : null,
     );
   }
   Map<String, dynamic> toJson() {
